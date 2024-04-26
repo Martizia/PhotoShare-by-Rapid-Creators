@@ -1,8 +1,22 @@
+from os import environ
+from pathlib import Path
+from typing import Dict
+from dotenv import load_dotenv
 from pydantic import ConfigDict, field_validator, EmailStr
 from pydantic_settings import BaseSettings
 
 
+BASE_PATH_PROJECT = Path(__file__).resolve().parent.parent
+# print(f"{BASE_PATH_PROJECT=}")
+BASE_PATH = BASE_PATH_PROJECT.parent
+# print(f"{BASE_PATH=}")
+load_dotenv(BASE_PATH.joinpath(".env"))
+APP_ENV = environ.get("APP_ENV")
+# print(f"{APP_ENV=}")
+
 class Settings(BaseSettings):
+    APP_NAME: str
+    APP_MODE: str
     DATABASE_URL: str
     SECRET_KEY_JWT: str
     ALGORITHM: str
@@ -17,6 +31,7 @@ class Settings(BaseSettings):
     CLOUDINARY_NAME: str
     CLOUDINARY_API_KEY: int
     CLOUDINARY_API_SECRET: str
+    STATIC_DIRECTORY: str = str(BASE_PATH_PROJECT.joinpath("static"))
 
     @field_validator("ALGORITHM")
     @classmethod
@@ -26,7 +41,9 @@ class Settings(BaseSettings):
         return v
 
     model_config = ConfigDict(
-        extra="ignore", env_file=".env", env_file_encoding="utf-8" # noqa
+        extra="ignore",
+        env_file=BASE_PATH.joinpath(".env"),
+        env_file_encoding="utf-8",
     )
 
 
