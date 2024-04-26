@@ -1,10 +1,22 @@
-from sqlalchemy import String, Date, Integer, ForeignKey, DateTime, Boolean, func
+from sqlalchemy import String, Integer, ForeignKey, DateTime, Boolean, func, Table, Column
 from sqlalchemy.orm import Mapped, mapped_column, relationship, DeclarativeBase
 from datetime import date
 
 
 class Base(DeclarativeBase):
     pass
+
+
+image_tag = Table('image_tag', Base.metadata,
+                  Column('image_id', Integer, ForeignKey('images.id')),
+                  Column('tag_id', Integer, ForeignKey('tags.id'))
+                  )
+
+
+image_comment = Table('image_comment', Base.metadata,
+                      Column('image_id', Integer, ForeignKey('images.id')),
+                      Column('comment_id', Integer, ForeignKey('comments.id'))
+                      )
 
 
 class Image(Base):
