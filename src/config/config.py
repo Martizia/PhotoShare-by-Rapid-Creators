@@ -1,5 +1,12 @@
+from typing import Any
+import os
+from pathlib import Path
 from pydantic import ConfigDict, field_validator, EmailStr
 from pydantic_settings import BaseSettings
+
+path = Path(__file__)
+ROOT_DIR = path.parent.absolute()
+config_path = os.path.join(ROOT_DIR, "../../.env")
 
 
 class Settings(BaseSettings):
@@ -8,7 +15,7 @@ class Settings(BaseSettings):
     ALGORITHM: str
     MAIL_USERNAME: EmailStr
     MAIL_PASSWORD: str
-    MAIL_FROM: str
+    MAIL_FROM: EmailStr
     MAIL_PORT: int
     MAIL_SERVER: str
     REDIS_DOMAIN: str = "localhost"
@@ -20,13 +27,13 @@ class Settings(BaseSettings):
 
     @field_validator("ALGORITHM")
     @classmethod
-    def validate_algorithm(cls, v):
+    def validate_algorithm(cls, v: Any):
         if v not in ["HS256", "HS512"]:
             raise ValueError("Algorithm must be HS256 or HS512")
         return v
 
     model_config = ConfigDict(
-        extra="ignore", env_file=".env", env_file_encoding="utf-8" # noqa
+        extra="ignore", env_file=config_path, env_file_encoding="utf-8" # noqa
     )
 
 
