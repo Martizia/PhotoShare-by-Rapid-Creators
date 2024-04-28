@@ -1,4 +1,5 @@
-from sqlalchemy import String, Integer, ForeignKey, DateTime, Boolean, func, Table, Column
+import enum
+from sqlalchemy import String, Integer, ForeignKey, DateTime, Boolean, func, Table, Column, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship, DeclarativeBase
 from datetime import date
 
@@ -25,7 +26,7 @@ class Image(Base):
     link: Mapped[str] = mapped_column(String(150), index=True)
     description: Mapped[str] = mapped_column(String(250), nullable=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
-    tags = relationship("Tag", secondary="image_tags", back_populates="images")
+    tags = relationship("Tag", secondary="image_tag", back_populates="images")
     comments = relationship("Comment", back_populates="image")
 
 
@@ -40,6 +41,7 @@ class Comment(Base):
     updated_at: Mapped[date] = mapped_column(
         "updated_at", DateTime, default=func.now(), onupdate=func.now(), nullable=True
     )
+    image_id: Mapped[int] = mapped_column(Integer, ForeignKey("images.id"), nullable=False)
     image = relationship("Image", back_populates="comments")
 
 
@@ -47,7 +49,13 @@ class Tag(Base):
     __tablename__ = "tags"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(50), index=True)
-    images = relationship("Image", secondary="image_tags", back_populates="tags")
+    images = relationship("Image", secondary="image_tag", back_populates="tags")
+
+
+class Role(enum.Enum):
+    admin: str = "admin"
+    moderator: str = "moderator"
+    user: str = "user"
 
 
 class User(Base):
@@ -62,8 +70,18 @@ class User(Base):
     updated_at: Mapped[date] = mapped_column(
         "updated_at", DateTime, default=func.now(), onupdate=func.now()
     )
-    role: Mapped[str] = mapped_column(String(50), default="user")
+    role: Mapped[Enum] = mapped_column(Enum(Role), default=Role.user, nullable=True)
     confirmed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
     banned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
 
 
+class Rating(Base):
+    __tablename__ = "ratings"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    image_id: Mapped[int] = mapped_column(Integer, ForeignKey("images.id"), nullable=False)
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[date] = mapped_column(
+        "created_at", DateTime, default=func.now(), nullable=False
+    )
+   
