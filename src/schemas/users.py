@@ -1,4 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from sqlalchemy import DateTime, func
+from datetime import datetime
 
 from src.database.models import Role
 
@@ -17,6 +19,15 @@ class UserResponse(BaseModel):
     role: Role
     model_config = ConfigDict(from_attributes=True)
 
+
+# class UserUpdateSchema(BaseModel):
+#     username: str
+#     email: EmailStr
+#     avatar: str
+#     role: Role
+#     model_config: ConfigDict = ConfigDict(from_attributes=True)
+#     updated_at: DateTime = datetime.now()
+#     banned: bool
 
 class TokenModel(BaseModel):
     access_token: str

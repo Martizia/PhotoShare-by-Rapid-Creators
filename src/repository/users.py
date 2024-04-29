@@ -7,8 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.db import get_db
 from src.database.models import User
-from src.schemas.users import UserModel
+from src.schemas.users import UserModel#, UserUpdateSchema
 from src.services.auth import auth_service
+from datetime import datetime
 
 
 async def get_user_by_email(email: str, db: AsyncSession = Depends(get_db)):
@@ -97,3 +98,56 @@ async def get_user(user_id: int, db: AsyncSession):#, current_user: User):
         return user.scalar_one_or_none()
     except Exception as e:
         print('Error: {e}')
+
+
+# async def update_user(
+#         user_id: int, body: UserUpdateSchema, db: AsyncSession, current_user: User):
+#     """
+#     Updates a single user with the specified ID for a specific user.
+
+#     :param user_id: The ID of the user to update.
+#     :type user_id: int
+#     :param body: The updated data for the user.
+#     :type body: UserUpdateSchema
+#     :param db: The async database session.
+#     :type db: AsyncSession
+#     :param current_user: The user to update the user for.
+#     :type current_user: User
+#     :return: The updated user, or None if it does not exist.
+#     :rtype: User | None
+#     """
+#     stmt = select(User).filter_by(id=user_id, user=current_user)
+#     result = await db.execute(stmt)
+#     user = result.scalar_one_or_none()
+#     if user:
+#         user.username = body.username
+#         user.email = body.email
+#         user.avatar = body.avatar
+#         user.role= body.role
+#         user.updated_at=datetime.now()
+#         user.banned = body.banned
+#         await db.commit()
+#         await db.refresh(user)
+#     return user
+
+
+async def delete_user(user_id: int, db: AsyncSession):#, current_user: User):
+    """
+    Removes a single user with the specified ID for a specific user.
+
+    :param user_id: The ID of the user to remove.
+    :type user_id: int
+    :param db: The async database session.
+    :type db: AsyncSession
+    :param current_user: The user to remove the user for.
+    :type current_user: User
+    :return: The removed user, or None if it does not exist.
+    :rtype: User | None
+    """
+    stmt = select(User).filter_by(id=user_id)#, user=current_user)
+    user = await db.execute(stmt)
+    user = user.scalar_one_or_none()
+    if user:
+        await db.delete(user)
+        await db.commit()
+    return user
