@@ -7,8 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.db import get_db
 from src.repository import users as repository_users
-from src.schemas.schemas import PasswordResetRequest, PasswordReset
-from src.schemas.users import RequestEmail, TokenModel, UserModel, UserResponse
+from src.schemas.users import RequestEmail, TokenModel, UserModel, UserResponse, PasswordResetRequest, PasswordReset
 from src.services.auth import auth_service
 from src.services.email import send_email, send_password_reset_email
 
@@ -85,6 +84,7 @@ async def request_email(body: RequestEmail, background_tasks: BackgroundTasks, r
 @router.get('/{username}')
 async def open_email_tracking(username: str, response: Response, db: AsyncSession = Depends(get_db)):
     return FileResponse("src/static/1x1.png", media_type="image/png", content_disposition_type="inline")
+
 
 @router.post("/forgot_password")
 async def forgot_password(body: PasswordResetRequest, request: Request, db: AsyncSession = Depends(get_db)):
