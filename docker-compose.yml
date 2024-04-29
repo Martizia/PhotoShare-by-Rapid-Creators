@@ -1,11 +1,11 @@
 version: '3'
 services:
   redis:
-    image: redis:alpine
+    image: redis:latest
     ports:
       - "6379:6379"
   postgres:
-    image: postgres:alpine
+    image: postgres:latest
     environment:
       POSTGRES_DB: ${PG_DB}
       POSTGRES_USER: ${PG_USER}

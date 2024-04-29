@@ -20,7 +20,10 @@ class DataBaseSessionManager:
         session = self._session_maker()
         try:
             yield session
+        except Exception as err:
+            print(err)
             await session.rollback()
+            raise
         finally:
             await session.close()
 
