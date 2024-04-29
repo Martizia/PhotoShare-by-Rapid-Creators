@@ -76,3 +76,24 @@ async def update_password(email: str, new_password: str, db: AsyncSession = Depe
         await db.commit()
         return user
     return None
+
+
+async def get_user(user_id: int, db: AsyncSession):#, current_user: User):
+    """
+    Retrieves a single user with the specified ID for a specific user.
+
+    :param user_id: The ID of the user to retrieve.
+    :type user_id: int
+    :param db: The async database session.
+    :type db: AsyncSession
+    :param current_user: The user to retrieve the user for.
+    :type current_user: User
+    :return: The user with the specified ID, or None if it does not exist.
+    :rtype: User | None
+    """
+    try:
+        stmt = select(User).filter_by(id=user_id)#, user=current_user)
+        user = await db.execute(stmt)
+        return user.scalar_one_or_none()
+    except Exception as e:
+        print('Error: {e}')
