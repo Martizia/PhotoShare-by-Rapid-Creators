@@ -6,14 +6,16 @@ from src.database.db import get_db
 from src.database.models import Rating, User, Image
 from src.repository import rating as repository_rating
 from src.schemas.rating import RatingResponse, RatingSchema, RatingAverageResponse
+from src.services.auth import auth_service
 
 router = APIRouter(prefix="/rating", tags=["rating"])
 
 
 @router.post("/", response_model=RatingResponse, status_code=status.HTTP_201_CREATED)
-async def create_rating(body: RatingSchema, db: AsyncSession = Depends(get_db)
+async def create_rating(body: RatingSchema, db: AsyncSession = Depends(get_db),
+                        user: User = Depends(auth_service.get_current_user),
                         ):
-    rating = await repository_rating.create_rating(body, db, body.user_id, body.image_id)
+    rating = await repository_rating.create_rating(body, db, user)
     return rating
 
 

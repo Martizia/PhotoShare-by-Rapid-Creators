@@ -73,12 +73,14 @@ class User(Base):
     role: Mapped[Enum] = mapped_column(Enum(Role), default=Role.user, nullable=True)
     confirmed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
     banned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
+    reset_token: Mapped[str] = mapped_column(String, nullable=True)
 
 
 class Rating(Base):
     __tablename__ = "ratings"
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    user: Mapped["User"] = relationship("User", backref="ratings", lazy="joined")
     image_id: Mapped[int] = mapped_column(Integer, ForeignKey("images.id"), nullable=False)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[date] = mapped_column(
