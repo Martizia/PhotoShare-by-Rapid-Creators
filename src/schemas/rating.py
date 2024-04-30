@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, Field
-# from src.schemas.user import UserResponse
+from src.schemas.users import UserResponse
 
 
 class RatingSchema(BaseModel):
@@ -15,7 +15,7 @@ class RatingSchema(BaseModel):
 class RatingResponse(BaseModel):
     id: int = 1
     image_id: int
-    user_id: str
+    user: UserResponse
     rating: int
     created_at: datetime | None
 
