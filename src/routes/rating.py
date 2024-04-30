@@ -17,7 +17,6 @@ async def create_rating(body: RatingSchema, db: AsyncSession = Depends(get_db),
                         ):
     await repository_rating.check_user_rating(db, user, body.image_id)
     await repository_rating.check_image_owner(db, user, body.image_id)
-
     rating = await repository_rating.create_rating(body, db, user)
     return rating
 
