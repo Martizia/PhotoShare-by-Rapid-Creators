@@ -79,6 +79,7 @@ class Auth:
         try:
             payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
             if payload['scope'] == 'access_token':
+                print('In 234343 PAYLOAD:', payload, payload["scope"], payload["sub"])
                 email = payload["sub"]
                 if email is None:
                     raise credentials_exception

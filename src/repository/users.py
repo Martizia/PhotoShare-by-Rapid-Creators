@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.db import get_db
 from src.database.models import User
-from src.schemas.users import UserModel#, UserUpdateSchema
+from src.schemas.users import UserModel, UserUpdateMyAcount, UserUpdateByAdmin
 from src.services.auth import auth_service
 from datetime import datetime
 
@@ -100,35 +100,92 @@ async def get_user(user_id: int, db: AsyncSession):#, current_user: User):
         print('Error: {e}')
 
 
-# async def update_user(
-#         user_id: int, body: UserUpdateSchema, db: AsyncSession, current_user: User):
-#     """
-#     Updates a single user with the specified ID for a specific user.
+async def update_my_acount(
+        user_id: int,
+        body: UserUpdateMyAcount,
+        db: AsyncSession):
+    """
+    Updates a single user with the specified ID for a specific user.
 
-#     :param user_id: The ID of the user to update.
-#     :type user_id: int
-#     :param body: The updated data for the user.
-#     :type body: UserUpdateSchema
-#     :param db: The async database session.
-#     :type db: AsyncSession
-#     :param current_user: The user to update the user for.
-#     :type current_user: User
-#     :return: The updated user, or None if it does not exist.
-#     :rtype: User | None
-#     """
-#     stmt = select(User).filter_by(id=user_id, user=current_user)
-#     result = await db.execute(stmt)
-#     user = result.scalar_one_or_none()
-#     if user:
-#         user.username = body.username
-#         user.email = body.email
-#         user.avatar = body.avatar
-#         user.role= body.role
-#         user.updated_at=datetime.now()
-#         user.banned = body.banned
-#         await db.commit()
-#         await db.refresh(user)
-#     return user
+    :param user_id: The ID of the user to update.
+    :type user_id: int
+    :param body: The updated data for the user.
+    :type body: UserUpdate
+    :param db: The async database session.
+    :type db: AsyncSession
+    :param current_user: The user to update the user for.
+    :type current_user: User
+    :return: The updated user, or None if it does not exist.
+    :rtype: User | None
+    """
+    stmt = select(User).filter_by(id=user_id)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    if user:
+        if user.username != body.username:
+            if body.username != 'string':
+                user.username = body.username
+        if user.email != body.email:
+            if body.email != "user@example.com":
+                user.email = body.email
+        if user.avatar != body.avatar:
+            if body.avatar != 'string':
+                user.avatar = body.avatar
+        if user.role != body.role:
+            user.role= body.role
+        user.updated_at=datetime.now()
+        await db.commit()
+        await db.refresh(user)
+    return user
+
+
+async def update_user_by_admin(
+        user_id: int,
+        body: UserUpdateByAdmin,
+        db: AsyncSession):
+    """
+    Updates a single user with the specified ID for a specific user.
+
+    :param user_id: The ID of the user to update.
+    :type user_id: int
+    :param body: The updated data for the user.
+    :type body: UserUpdate
+    :param db: The async database session.
+    :type db: AsyncSession
+    :param current_user: The user to update the user for.
+    :type current_user: User
+    :return: The updated user, or None if it does not exist.
+    :rtype: User | None
+    """
+    
+    stmt = select(User).filter_by(id=user_id)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    if user:
+        print('32214134', user.username, body.username)
+
+        if user.username != body.username:
+            if body.username != 'string':
+                user.username = body.username
+        if user.email != body.email:
+            if body.email != "user@example.com":
+                user.email = body.email
+        if user.password != body.password:
+            if body.avatar != 'string':
+                user.password = body.password
+        if user.avatar != body.avatar:
+            if body.avatar != 'string':
+                user.avatar = body.avatar
+        user.updated_at=datetime.now()
+        if user.role != body.role:
+            user.role= body.role
+        if user.confirmed != body.confirmed:
+            user.confirmed= body.confirmed
+        if user.banned != body.banned:
+            user.banned= body.banned
+        await db.commit()
+        await db.refresh(user)
+    return user
 
 
 async def delete_user(user_id: int, db: AsyncSession):#, current_user: User):
