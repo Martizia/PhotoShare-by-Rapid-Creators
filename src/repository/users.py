@@ -101,7 +101,7 @@ async def get_user(user_id: int, db: AsyncSession):#, current_user: User):
 
 
 async def update_my_acount(
-        user_id: int,
+        user: User,
         body: UserUpdateMyAcount,
         db: AsyncSession):
     """
@@ -118,9 +118,6 @@ async def update_my_acount(
     :return: The updated user, or None if it does not exist.
     :rtype: User | None
     """
-    stmt = select(User).filter_by(id=user_id)
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
     if user:
         if user.username != body.username:
             if body.username != 'string':

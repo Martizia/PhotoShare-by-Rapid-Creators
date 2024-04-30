@@ -76,7 +76,7 @@ async def get_user(
 )
 async def update_my_acount(
     body: UserUpdateMyAcount,
-    user_id: int = Path(ge=1), 
+    user: User = Depends(auth_service.get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -96,7 +96,7 @@ async def update_my_acount(
     :return: The updated user.
     :rtype: User
     """
-    user = await repository_users.update_my_acount(user_id, body, db)
+    user = await repository_users.update_my_acount(user, body, db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="NOT FOUND")
     return user

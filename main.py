@@ -14,6 +14,7 @@ from middlewares import (BlackListMiddleware, CustomCORSMiddleware,
 from src.database.db import get_db
 from src.config.config import config
 from src.routes import comments, auth, users, images, rating
+from src.services.auth import init_blacklist_file
 
 import uvicorn
 
@@ -75,4 +76,5 @@ async def healthchecker(db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Error connecting to the database")
 
 if __name__ == "__main__":
+    init_blacklist_file()
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
