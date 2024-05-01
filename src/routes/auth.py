@@ -8,8 +8,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.db import get_db
 from src.repository import users as repository_users
 from src.schemas.users import RequestEmail, TokenModel, UserModel, UserResponse, PasswordResetRequest, PasswordReset
-from src.services.auth import auth_service
+from src.services.auth import auth_service, add_blacklist_token
 from src.services.email import send_email, send_password_reset_email
+
+from fastapi.responses import JSONResponse
+
+
+CREDENTIALS_EXCEPTION = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail='Could not validate credentials',
+    headers={'WWW-Authenticate': 'Bearer'},
+)
 
 router = APIRouter(prefix='/auth', tags=["Authorization"])
 get_refresh_token = HTTPBearer()
@@ -39,6 +48,13 @@ async def login(body: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = 
     refresh_token = await auth_service.create_refresh_token(data={"sub": user.email})
     await repository_users.update_token(user, refresh_token, db)
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+
+
+@router.get('/logout')
+def logout(token: str = Depends(auth_service.get_current_user_token)):
+    if add_blacklist_token(token):
+        return JSONResponse({'result': True})
+    raise CREDENTIALS_EXCEPTION
 
 
 @router.get('/refresh_token', response_model=TokenModel)
