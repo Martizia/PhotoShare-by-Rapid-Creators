@@ -43,3 +43,31 @@ async def create_comment(
     else:
         comment = await repository_comments.create_comment(body, db, current_user)
         return comment
+    
+
+@router.delete(
+    "/{comment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    description="No more than 1 request per minute",
+    dependencies=[Depends(RateLimiter(times=1, seconds=20))],
+)
+async def delete_comment(
+    comment_id: int = Path(ge=1),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(auth_service.get_current_user),
+):
+    """
+    Deletes a specific comment by its ID for the authenticated user.
+
+    :param comment_id: The ID of the comment to delete. Must be greater than or equal to 1.
+    :type comment_id: int
+    :param db: The database session.
+    :type db: AsyncSession
+    :param current_user: The currently authenticated user.
+    :type current_user: User
+
+    :return: The deleted comment.
+    :rtype: Comment
+    """
+    comment = await repository_comments.delete_comment(comment_id, db, current_user)
+    return comment
