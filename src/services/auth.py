@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config.config import config
 from src.database.db import get_db
+from src.database.models import User, Role
 from src.repository import users as repository_users
 
 from passlib.context import CryptContext
@@ -110,6 +111,12 @@ class Auth:
             print("User from cache")
             user = pickle.loads(user)  # noqa
         return user
+
+    async def get_admin(self, token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+        user = await self.get_current_user(token, db)
+        if user.role != Role.admin:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+        return True
 
     def create_email_token(self, data: dict):
         to_encode = data.copy()

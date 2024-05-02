@@ -79,18 +79,13 @@ async def refresh_token(credentials: HTTPAuthorizationCredentials = Depends(get_
 @router.get('/confirmed_email/{token}')
 async def confirmed_email(token: str, credentials: HTTPAuthorizationCredentials = Depends(get_refresh_token),
                           db: AsyncSession = Depends(get_db)):
- 
     if not credentials or not credentials.credentials:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-
-
     refresh_token = credentials.credentials
     email = await auth_service.decode_refresh_token(refresh_token)
     user = await repository_users.get_user_by_email(email, db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Verification error")
-    
-
     if token != user.email_confirmation_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email confirmation token")
     if user.confirmed:
