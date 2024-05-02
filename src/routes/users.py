@@ -160,3 +160,4 @@ async def delete_user(
     """
     user = await repository_users.delete_user(user_id, db)#, current_user)
     return user
+

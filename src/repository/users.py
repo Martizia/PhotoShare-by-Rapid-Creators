@@ -1,5 +1,4 @@
 from random import randint
-
 from fastapi import Depends
 from libgravatar import Gravatar
 from sqlalchemy import select
@@ -7,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.db import get_db
 from src.database.models import User
+
 from src.schemas.users import UserModel, UserUpdateMyAcount, UserUpdateByAdmin
-#from src.services.auth import auth_service
 from datetime import datetime
 
 
@@ -205,3 +204,4 @@ async def delete_user(user_id: int, db: AsyncSession):#, current_user: User):
         await db.delete(user)
         await db.commit()
     return user
+

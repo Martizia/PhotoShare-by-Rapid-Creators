@@ -18,6 +18,8 @@ from src.services.auth import init_blacklist_file
 
 import uvicorn
 
+import uvicorn
+
 app = FastAPI()
 
 origins = ["*"]
@@ -37,6 +39,7 @@ app.include_router(comments.router, prefix='/api')
 app.include_router(rating.router, prefix='/api')
 
 BASE_DIR = Path(".")
+
 
 # app.mount("/static", StaticFiles(directory=BASE_DIR / "src" / "static"), name="static")
 

@@ -1,9 +1,9 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
+
 from sqlalchemy import DateTime, func
 from datetime import datetime
 
 from src.database.models import Role
-
 
 
 class UserModel(BaseModel):
@@ -41,7 +41,6 @@ class UserUpdateMyAcount(BaseModel):
     updated_at: datetime | None
 
 
-
 class TokenModel(BaseModel):
     access_token: str
     refresh_token: str
@@ -59,3 +58,4 @@ class PasswordResetRequest(BaseModel):
 class PasswordReset(BaseModel):
     token: str
     new_password: str
+
