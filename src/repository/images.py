@@ -33,7 +33,7 @@ async def update_description_db(db: AsyncSession, image_id: int, body: UpdateIma
     image = result.scalar_one_or_none()
     if image:
         image.description = body.description
-        # image.tags = []      # TODO якщо будемо додавати редагування усіх тегів
+        # image.tags = []
         # tags = await get_tags_list(db, body.tags)
         # for tag in tags:
         #     image.tags.append(tag)
