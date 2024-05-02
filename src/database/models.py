@@ -79,10 +79,17 @@ class User(Base):
 class Rating(Base):
     __tablename__ = "ratings"
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    user: Mapped["User"] = relationship("User", backref="ratings", lazy="joined")
     image_id: Mapped[int] = mapped_column(Integer, ForeignKey("images.id"), nullable=False)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[date] = mapped_column(
         "created_at", DateTime, default=func.now(), nullable=False
     )
-   
+
+
+class TransformedImage(Base):
+    __tablename__ = "transformed_images"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    link: Mapped[str] = mapped_column(String(150), index=True)
+    image_id: Mapped[int] = mapped_column(Integer, ForeignKey("images.id"), nullable=True)

@@ -1,5 +1,6 @@
 from fastapi import (APIRouter, BackgroundTasks, Depends, HTTPException,
                      Request, Response, status)
+
 from fastapi.security import (HTTPAuthorizationCredentials, HTTPBearer,
                               OAuth2PasswordRequestForm)
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,10 +9,18 @@ from src.database.db import get_db
 from src.database.models import Role, User
 from src.repository import users as repository_users
 from src.schemas.schemas import PasswordResetRequest, PasswordReset
-from src.schemas.users import RequestEmail, TokenModel, UserModel, UserResponse
-from src.services.auth import auth_service
-from src.services.email import send_email, send_password_reset_email
 from src.services.roles import RoleAccess
+from fastapi.responses import FileResponse, JSONResponse
+from src.schemas.users import RequestEmail, TokenModel, UserModel, UserResponse, PasswordResetRequest, PasswordReset
+from src.services.auth import auth_service, add_blacklist_token
+from src.services.email import send_email, send_password_reset_email
+
+
+CREDENTIALS_EXCEPTION = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail='Could not validate credentials',
+    headers={'WWW-Authenticate': 'Bearer'},
+)
 
 
 router = APIRouter(prefix='/auth', tags=["Authorization"])
@@ -28,6 +37,7 @@ async def signup(body: UserModel, background_tasks: BackgroundTasks, request: Re
     background_tasks.add_task(send_email, new_user.email, new_user.username, str(request.base_url))
     return new_user
 
+
 @router.post("/login", response_model=TokenModel, status_code=status.HTTP_200_OK)
 async def login(body: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
     user = await repository_users.get_user_by_email(body.username, db)
@@ -41,6 +51,13 @@ async def login(body: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = 
     refresh_token = await auth_service.create_refresh_token(data={"sub": user.email})
     await repository_users.update_token(user, refresh_token, db)
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+
+
+@router.get('/logout')
+def logout(token: str = Depends(auth_service.get_current_user_token)):
+    if add_blacklist_token(token):
+        return JSONResponse({'result': True})
+    raise CREDENTIALS_EXCEPTION
 
 
 @router.get('/refresh_token', response_model=TokenModel)
@@ -57,6 +74,7 @@ async def refresh_token(credentials: HTTPAuthorizationCredentials = Depends(get_
     refresh_token = await auth_service.create_refresh_token(data={"sub": email})
     await repository_users.update_token(user, refresh_token, db)
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+
 
 @router.get('/confirmed_email/{token}')
 async def confirmed_email(token: str, credentials: HTTPAuthorizationCredentials = Depends(get_refresh_token),
@@ -75,18 +93,16 @@ async def confirmed_email(token: str, credentials: HTTPAuthorizationCredentials 
 
     if token != user.email_confirmation_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email confirmation token")
-
-  
     if user.confirmed:
         return {"message": "Your email is already confirmed"}
     await repository_users.confirmed_email(email, db)
     return {"message": "Email confirmed"}
 
+
 @router.post('/request_email')
 async def request_email(body: RequestEmail, background_tasks: BackgroundTasks, request: Request,
                         db: AsyncSession = Depends(get_db)):
     user = await repository_users.get_user_by_email(body.email, db)
-
     if user:
         if user.confirmed:
             return {"message": "Your email is already confirmed"}
@@ -95,6 +111,12 @@ async def request_email(body: RequestEmail, background_tasks: BackgroundTasks, r
             return {"message": "Check your email for confirmation."}
     else:
         return {"message": "User with this email does not exist."}
+
+
+@router.get('/{username}')
+async def open_email_tracking(username: str, response: Response, db: AsyncSession = Depends(get_db)):
+    return FileResponse("src/static/1x1.png", media_type="image/png", content_disposition_type="inline")
+
 
 @router.post("/forgot_password")
 async def forgot_password(body: PasswordResetRequest, request: Request, db: AsyncSession = Depends(get_db)):

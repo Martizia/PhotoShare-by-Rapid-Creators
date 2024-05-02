@@ -15,6 +15,13 @@ from src.repository import users as repository_users
 from passlib.context import CryptContext
 
 
+CREDENTIALS_EXCEPTION = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail='Could not validate credentials',
+    headers={'WWW-Authenticate': 'Bearer'},
+)
+
+
 class Auth:
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     now_utc = datetime.now(timezone.utc)
@@ -70,6 +77,8 @@ class Auth:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate credentials')
 
     async def get_current_user(self, token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+        if is_token_blacklisted(token):
+            raise CREDENTIALS_EXCEPTION
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -110,6 +119,8 @@ class Auth:
         return token
 
     async def get_email_from_token(self, token: str):
+        if is_token_blacklisted(token):
+            raise CREDENTIALS_EXCEPTION
         try:
             payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
             email = payload["sub"]
@@ -118,7 +129,34 @@ class Auth:
             print(e)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                                 detail="Invalid token for email verification")
-        
+
+
+    async def get_current_user_token(self, token: str = Depends(oauth2_scheme)):
+        #_ = self.get_email_from_token(token)
+        return token
+
+
+
+def init_blacklist_file():
+    open('blacklist_db.txt', 'a').close()
+    return True
+
+
+def add_blacklist_token(token):
+    with open('blacklist_db.txt', 'a') as file:
+        file.write(f'{token},')
+    return True
+
+
+def is_token_blacklisted(token):
+    with open('blacklist_db.txt') as file:
+        content = file.read()
+        array = content[:-1].split(',')
+        for value in array:
+            if value == token:
+                return True
+
+    return False
 
 
 auth_service = Auth()

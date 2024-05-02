@@ -1,5 +1,4 @@
 /.env
 __pycache__
-/static/
-/templates/
-/services/templates/
+postgres-data
+migrations/

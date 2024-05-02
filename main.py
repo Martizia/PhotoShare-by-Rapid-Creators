@@ -14,6 +14,9 @@ from middlewares import (BlackListMiddleware, CustomCORSMiddleware,
 from src.database.db import get_db
 from src.config.config import config
 from src.routes import comments, auth, users, images, rating
+from src.services.auth import init_blacklist_file
+
+import uvicorn
 
 import uvicorn
 
@@ -31,13 +34,14 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix='/api')
 app.include_router(users.router, prefix='/api')
-# app.include_router(images.router, prefix='/api')
-# app.include_router(comments.router, prefix='/api')
+app.include_router(images.router, prefix='/api')
+app.include_router(comments.router, prefix='/api')
 app.include_router(rating.router, prefix='/api')
 
 BASE_DIR = Path(".")
 
-app.mount("/static", StaticFiles(directory=BASE_DIR / "src" / "static"), name="static")
+
+# app.mount("/static", StaticFiles(directory=BASE_DIR / "src" / "static"), name="static")
 
 
 @app.on_event("startup")
@@ -75,4 +79,5 @@ async def healthchecker(db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Error connecting to the database")
 
 if __name__ == "__main__":
+    init_blacklist_file()
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
