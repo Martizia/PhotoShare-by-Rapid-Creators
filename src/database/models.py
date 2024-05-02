@@ -86,4 +86,10 @@ class Rating(Base):
     created_at: Mapped[date] = mapped_column(
         "created_at", DateTime, default=func.now(), nullable=False
     )
-   
+
+
+class TransformedImage(Base):
+    __tablename__ = "transformed_images"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    link: Mapped[str] = mapped_column(String(150), index=True)
+    image_id: Mapped[int] = mapped_column(Integer, ForeignKey("images.id"), nullable=True)
