@@ -1,5 +1,4 @@
 from random import randint
-
 from fastapi import Depends
 from libgravatar import Gravatar
 from sqlalchemy import select
@@ -8,8 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.db import get_db
 from src.database.models import User
 from src.schemas.users import UserModel
-from src.services.auth import auth_service
-
 
 async def get_user_by_email(email: str, db: AsyncSession = Depends(get_db)):
     stmt = select(User).filter_by(email=email)
@@ -50,3 +47,28 @@ async def update_avatar_url(email: str, url: str | None, db: AsyncSession = Depe
     await db.commit()
     await db.refresh(user)
     return user
+
+async def store_reset_token(email: str, token: str, db: AsyncSession = Depends(get_db)):
+    user = await get_user_by_email(email, db)
+    user.reset_token = token
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+async def verify_reset_token(email: str, token: str, db: AsyncSession = Depends(get_db)):
+    user = await get_user_by_email(email, db)
+    if user is not None and user.reset_token == token:
+        return True
+    return False
+
+
+async def update_password(email: str, new_password: str, db: AsyncSession = Depends(get_db)):
+    from src.services.auth import auth_service
+    user = await get_user_by_email(email, db)
+    if user is not None:
+        hashed_new_password = auth_service.get_password_hash(new_password)
+        user.password = hashed_new_password
+        await db.commit()
+        return user
+    return None

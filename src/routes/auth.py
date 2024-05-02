@@ -1,16 +1,18 @@
 from fastapi import (APIRouter, BackgroundTasks, Depends, HTTPException,
                      Request, Response, status)
-from fastapi.responses import FileResponse
 from fastapi.security import (HTTPAuthorizationCredentials, HTTPBearer,
                               OAuth2PasswordRequestForm)
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy import select
 from src.database.db import get_db
+from src.database.models import Role, User
 from src.repository import users as repository_users
 from src.schemas.schemas import PasswordResetRequest, PasswordReset
 from src.schemas.users import RequestEmail, TokenModel, UserModel, UserResponse
 from src.services.auth import auth_service
 from src.services.email import send_email, send_password_reset_email
+from src.services.roles import RoleAccess
+
 
 router = APIRouter(prefix='/auth', tags=["Authorization"])
 get_refresh_token = HTTPBearer()
@@ -25,7 +27,6 @@ async def signup(body: UserModel, background_tasks: BackgroundTasks, request: Re
     new_user = await repository_users.create_user(body, db)
     background_tasks.add_task(send_email, new_user.email, new_user.username, str(request.base_url))
     return new_user
-
 
 @router.post("/login", response_model=TokenModel, status_code=status.HTTP_200_OK)
 async def login(body: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
@@ -57,34 +58,43 @@ async def refresh_token(credentials: HTTPAuthorizationCredentials = Depends(get_
     await repository_users.update_token(user, refresh_token, db)
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
-
 @router.get('/confirmed_email/{token}')
-async def confirmed_email(token: str, db: AsyncSession = Depends(get_db)):
-    email = await auth_service.get_email_from_token(token)
+async def confirmed_email(token: str, credentials: HTTPAuthorizationCredentials = Depends(get_refresh_token),
+                          db: AsyncSession = Depends(get_db)):
+ 
+    if not credentials or not credentials.credentials:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+
+    refresh_token = credentials.credentials
+    email = await auth_service.decode_refresh_token(refresh_token)
     user = await repository_users.get_user_by_email(email, db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Verification error")
+    
+
+    if token != user.email_confirmation_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email confirmation token")
+
+  
     if user.confirmed:
         return {"message": "Your email is already confirmed"}
     await repository_users.confirmed_email(email, db)
     return {"message": "Email confirmed"}
-
 
 @router.post('/request_email')
 async def request_email(body: RequestEmail, background_tasks: BackgroundTasks, request: Request,
                         db: AsyncSession = Depends(get_db)):
     user = await repository_users.get_user_by_email(body.email, db)
 
-    if user.confirmed:
-        return {"message": "Your email is already confirmed"}
     if user:
-        background_tasks.add_task(send_email, user.email, user.username, str(request.base_url))
-    return {"message": "Check your email for confirmation."}
-
-
-@router.get('/{username}')
-async def open_email_tracking(username: str, response: Response, db: AsyncSession = Depends(get_db)):
-    return FileResponse("src/static/1x1.png", media_type="image/png", content_disposition_type="inline")
+        if user.confirmed:
+            return {"message": "Your email is already confirmed"}
+        else:
+            background_tasks.add_task(send_email, user.email, user.username, str(request.base_url))
+            return {"message": "Check your email for confirmation."}
+    else:
+        return {"message": "User with this email does not exist."}
 
 @router.post("/forgot_password")
 async def forgot_password(body: PasswordResetRequest, request: Request, db: AsyncSession = Depends(get_db)):
@@ -110,3 +120,81 @@ async def reset_password(body: PasswordReset, db: AsyncSession = Depends(get_db)
         raise HTTPException(status_code=400, detail="Invalid or expired token")
     await repository_users.update_password(email, body.new_password, db)
     return {"message": "Password reset successfully"}
+
+
+@router.put("/users/{email}/role", status_code=status.HTTP_200_OK)
+async def change_user_role_by_email(
+    email: str,
+    new_role: Role,
+    current_user: User = Depends(auth_service.get_current_user),
+    session: AsyncSession = Depends(get_db),
+):
+    role_access = RoleAccess([Role.admin])
+
+
+    await role_access(request=None, user=current_user)
+
+
+    user = await session.execute(select(User).where(User.email == email))
+    user = user.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    
+    user.role = new_role
+    await session.commit()
+
+    return {"message": "User role updated successfully"}
+
+@router.put("/users/{email}/ban", status_code=status.HTTP_200_OK)
+async def ban_user_by_email(
+    email: str,
+    current_user: User = Depends(auth_service.get_current_user),
+    session: AsyncSession = Depends(get_db),
+):
+    role_access = RoleAccess([Role.admin, Role.moderator])
+
+
+    await role_access(request=None, user=current_user)
+
+   
+    user = await session.execute(select(User).where(User.email == email))
+    user = user.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    user.banned = True
+    await session.commit()
+
+    return {"message": "User banned successfully"}
+
+@router.put("/users/{email}/unban", status_code=status.HTTP_200_OK)
+async def unban_user_by_email(
+    email: str,
+    current_user: User = Depends(auth_service.get_current_user),
+    session: AsyncSession = Depends(get_db),
+):
+    role_access = RoleAccess([Role.admin, Role.moderator])
+
+    await role_access(request=None, user=current_user)
+
+    user = await session.execute(select(User).where(User.email == email))
+    user = user.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    user.banned = False
+    await session.commit()
+
+    return {"message": "User unbanned successfully"}

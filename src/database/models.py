@@ -73,6 +73,7 @@ class User(Base):
     role: Mapped[Enum] = mapped_column(Enum(Role), default=Role.user, nullable=True)
     confirmed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
     banned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
+    reset_token: Mapped[str] = mapped_column(String, nullable=True)
 
 
 class Rating(Base):
