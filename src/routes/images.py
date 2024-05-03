@@ -76,8 +76,9 @@ async def crop_image(image_id: int, size: UpdateImageSchema, crop: Crop, db: Asy
     image = await get_image_db(db, image_id, current_user)
     if image is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
+
     public_id = f'PhotoShare(transformed)/{current_user.email}_{random.randint(1, 1000000)}'
-    transformed_image = cloudinary.uploader.upload(image, public_id=public_id,
+    transformed_image = cloudinary.uploader.upload(image.link, public_id=public_id,
                                                    transformation={"crop": f"{crop.value}", "width": f"{size.width}",
                                                                    "height": f"{size.height}"})
     link = transformed_image['secure_url']
@@ -91,7 +92,7 @@ async def use_effect(image_id: int, e: Effect, db: AsyncSession = Depends(get_db
     if image is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
     public_id = f'PhotoShare(transformed)/{current_user.email}_{random.randint(1, 1000000)}'
-    transformed_image = cloudinary.uploader.upload(image, public_id=public_id,
+    transformed_image = cloudinary.uploader.upload(image.link, public_id=public_id,
                                                    transformation={"effect": f"art:{e.value}"})
     link = transformed_image['secure_url']
     return await save_transformed_image(db, link, image_id)
@@ -103,4 +104,4 @@ async def generate_qrcode(image_id: int, db: AsyncSession = Depends(get_db),
     image = await get_transformed_image_db(db, image_id)
     if image is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
-    return await generate_qrcode_by_image(image)
+    return await generate_qrcode_by_image(image.link)

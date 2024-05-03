@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.db import get_db
 from src.database.models import Rating, User, Image
 from src.repository import rating as repository_rating
+from src.repository import images as repository_image
 from src.schemas.rating import RatingResponse, RatingSchema, RatingAverageResponse
 from src.services.auth import auth_service
 

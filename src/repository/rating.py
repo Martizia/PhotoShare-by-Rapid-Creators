@@ -1,15 +1,31 @@
 from fastapi import HTTPException, status
 from sqlalchemy import select, or_, extract, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.database.models import Rating, User, Image, Role
 from src.schemas.rating import RatingSchema, RatingResponse, RatingAverageResponse
 
 
 async def create_rating(body: RatingSchema, db: AsyncSession, user: User):
-    new_rating = Rating(**body.model_dump(exclude_unset=True), user=user)
+    # Fetch the image from the database
+    print(body.image_id)
+    stmt = select(Image).where(id=body.image_id)
+    result = await db.execute(stmt)
+    image = result.scalar_one_or_none()
+
+    if image is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
+
+    # Create the new rating
+    new_rating = Rating(**body.model_dump(exclude_unset=True), user=user, image=image)
     if new_rating.rating not in [1, 2, 3, 4, 5]:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Invalid rating value")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid rating value")
+
+    # image = select(Image).filter_by(id=body.image_id)
+    # new_rating = Rating(**body.model_dump(exclude_unset=True), user=user, image=image)
+    # if new_rating.rating not in [1, 2, 3, 4, 5]:
+    #     raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Invalid rating value")
     db.add(new_rating)
     await db.commit()
     await db.refresh(new_rating)

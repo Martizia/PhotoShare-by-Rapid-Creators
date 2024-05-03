@@ -45,7 +45,8 @@ async def update_description_db(db: AsyncSession, image_id: int, body: UpdateDes
 async def get_image_db(db: AsyncSession, image_id: int, user: User):
     query = select(Image).filter_by(id=image_id, user_id=user.id)
     result = await db.execute(query)
-    return result.scalar_one_or_none().link
+    result_one = result.scalar_one_or_none()
+    return result_one
 
 
 async def save_transformed_image(db: AsyncSession, link: str, image_id: int):
@@ -70,4 +71,5 @@ async def generate_qrcode_by_image(image: str):
 async def get_transformed_image_db(db: AsyncSession, image_id: int):
     query = select(TransformedImage).filter_by(id=image_id)
     result = await db.execute(query)
-    return result.scalar_one_or_none().link
+    result_one = result.scalar_one_or_none()
+    return result_one
