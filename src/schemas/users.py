@@ -21,24 +21,8 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserUpdateByAdmin(BaseModel):
-    username: str | None = Field(default=None)
-    email: EmailStr
-    password: str | None = Field(default=None, min_length=6, max_length=10)
-    avatar: str | None = Field(default=None)
-    updated_at: datetime | None
-    role: Role | None = Field(default=None,examples=["user"] )
-    confirmed: bool | None = Field(default=None, examples=[False])
-    banned: bool | None = Field(default=None, examples=[False])
-
-
-class UserUpdateMyAcount(BaseModel):
+class UserUpdateMyName(BaseModel):
     username: str
-    email: EmailStr
-    avatar: str
-    role: Role
-    model_config: ConfigDict = ConfigDict(from_attributes=True)
-    updated_at: datetime | None
 
 
 class TokenModel(BaseModel):

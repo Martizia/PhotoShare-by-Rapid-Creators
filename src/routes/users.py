@@ -8,7 +8,7 @@ from src.config.config import config
 from src.database.db import get_db
 from src.database.models import User
 from src.repository import users as repository_users
-from src.schemas.users import UserResponse, UserUpdateMyAcount, UserUpdateByAdmin
+from src.schemas.users import UserResponse, UserUpdateMyName
 from src.services.auth import auth_service
 
 router = APIRouter(prefix='/users', tags=["users"])
@@ -25,13 +25,12 @@ async def get_my_user(my_user: User = Depends(auth_service.get_current_user)):
 
 
 @router.patch('/avatar', response_model=UserResponse, dependencies=[Depends(RateLimiter(times=1, seconds=20))])
-async def upload_avatar(file: UploadFile = File(),
+async def change_avatar(file: UploadFile = File(),
                         user: User = Depends(auth_service.get_current_user),
                         db: AsyncSession = Depends(get_db)):
     public_id = f"Application/{user.email}"
     image = cloudinary.uploader.upload(file.file, public_id=public_id, overwrite=True)
-    print(image)
-    image_url = cloudinary.CloudinaryImage(public_id).build_url(width=250, height=250, crop=True,
+    image_url = cloudinary.CloudinaryImage(public_id).build_url(width=250, height=250, crop='fill',
                                                                 version=image.get('version'))
     user = await repository_users.update_avatar_url(user.email, image_url, db)
     return user
@@ -43,30 +42,14 @@ async def upload_avatar(file: UploadFile = File(),
     description="No more than 10 requests per minute",
     dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
-async def get_user(
+async def get_user_by_id(
     user_id: int = Path(ge=1),
-    db: AsyncSession = Depends(get_db),):
-    #current_user: User = Depends(auth_service.get_current_user),):
-    """
-    Retrieves a specific user by its ID for the authenticated user.
-
-    :param user_id: The ID of the user to retrieve. Must be greater than or equal to 1.
-    :type user_id: int
-    :param db: The database session.
-    :type db: AsyncSession
-    :param current_user: The currently authenticated user.
-    :type current_user: User
-
-    :raises HTTPException: If the user is not found.
-
-    :return: The user with the specified ID.
-    :rtype: User
-    """
-    user = await repository_users.get_user(user_id, db)#, current_user)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(auth_service.get_admin)):
+    user = await repository_users.get_user_by_id(user_id, db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="NOT FOUND")
     return user
-
 
 
 @router.put(
@@ -74,62 +57,12 @@ async def get_user(
     description="No more than 3 requests per minute",
     dependencies=[Depends(RateLimiter(times=3, seconds=60))],
 )
-async def update_my_acount(
-    body: UserUpdateMyAcount,
+async def update_my_name(
+    name: str,
     user: User = Depends(auth_service.get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Updates a specific user by its ID for the authenticated user.
-
-    :param body: The updated data for the user.
-    :type body: UserUpdate
-    :param user_id: The ID of the user to update. Must be greater than or equal to 1.
-    :type user_id: int
-    :param db: The database session.
-    :type db: AsyncSession
-    :param current_user: The currently authenticated user.
-    :type current_user: User
-
-    :raises HTTPException: If the user is not found.
-
-    :return: The updated user.
-    :rtype: User
-    """
-    user = await repository_users.update_my_acount(user, body, db)
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="NOT FOUND")
-    return user
-
-
-@router.put(
-    "/admin/{user_id}",
-    description="No more than 3 requests per minute",
-    dependencies=[Depends(RateLimiter(times=3, seconds=60))],
-)
-async def update_user_by_admin(
-    body: UserUpdateByAdmin,
-    user_id: int = Path(ge=1), 
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Updates a specific user by its ID for the authenticated user.
-
-    :param body: The updated data for the user.
-    :type body: UserUpdate
-    :param user_id: The ID of the user to update. Must be greater than or equal to 1.
-    :type user_id: int
-    :param db: The database session.
-    :type db: AsyncSession
-    :param current_user: The currently authenticated user.
-    :type current_user: User
-
-    :raises HTTPException: If the user is not found.
-
-    :return: The updated user.
-    :rtype: User
-    """
-    user = await repository_users.update_user_by_admin(user_id, body, db)
+    user = await repository_users.update_my_name(user, name, db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="NOT FOUND")
     return user
@@ -143,21 +76,10 @@ async def update_user_by_admin(
 )
 async def delete_user(
     user_id: int = Path(ge=1),
-    db: AsyncSession = Depends(get_db),):
-    #current_user: User = Depends(auth_service.get_current_user),):
-    """
-    Deletes a specific user by its ID for the authenticated user.
-
-    :param user_id: The ID of the user to delete. Must be greater than or equal to 1.
-    :type user_id: int
-    :param db: The database session.
-    :type db: AsyncSession
-    :param current_user: The currently authenticated user.
-    :type current_user: User
-
-    :return: The deleted user.
-    :rtype: User
-    """
-    user = await repository_users.delete_user(user_id, db)#, current_user)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(auth_service.get_admin)):
+    user = await repository_users.delete_user(user_id, db)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="NOT FOUND")
     return user
 
