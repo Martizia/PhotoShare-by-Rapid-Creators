@@ -21,6 +21,7 @@ async def get_tags_list(db: AsyncSession, tags: List[str]) -> List[Tag]:
     new_tags_list = []
     for tag_name in tags:
         tag_names = tag_name.split(",")
+        print(tag_names)
         if len(tag_names) > 5:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Too many tags. Maximum allowed is 5.")
         for name in tag_names:

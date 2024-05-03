@@ -43,7 +43,7 @@ class Auth:
         if expires_delta:
             expire = self.now_utc + timedelta(seconds=expires_delta)
         else:
-            expire = self.now_utc + timedelta(minutes=15)
+            expire = self.now_utc + timedelta(minutes=60)
         to_encode.update({"iat": self.now_utc, "exp": expire, "scope": "access_token"})
         encoded_access_token = jwt.encode(to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM)
         return encoded_access_token
@@ -60,15 +60,6 @@ class Auth:
 
     async def decode_refresh_token(self, refresh_token: str):
         try:
-            """
-            Example
-            PAYLOAD:DATA
-            {
-              "sub": "1234567890",
-              "email": "John Doe",  email will be here
-              "iat": 1516239022
-            }
-            """
             payload = jwt.decode(refresh_token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
             if payload['scope'] == 'refresh_token':
                 email = payload['sub']

@@ -10,7 +10,7 @@ from src.repository import comments as repository_comments
 from src.schemas.comments import CommentModel, CommentUpdateSchema
 from src.services.auth import auth_service
 
-router = APIRouter(prefix='/comments', tags=["commentss"])
+router = APIRouter(prefix='/comments', tags=["comments"])
 
 
 @router.post(
