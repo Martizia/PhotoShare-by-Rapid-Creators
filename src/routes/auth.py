@@ -108,11 +108,6 @@ async def request_email(body: RequestEmail, background_tasks: BackgroundTasks, r
         return {"message": "User with this email does not exist."}
 
 
-@router.get('/{username}')
-async def open_email_tracking(username: str, response: Response, db: AsyncSession = Depends(get_db)):
-    return FileResponse("src/static/1x1.png", media_type="image/png", content_disposition_type="inline")
-
-
 @router.post("/forgot_password")
 async def forgot_password(body: PasswordResetRequest, request: Request, db: AsyncSession = Depends(get_db)):
     user = await repository_users.get_user_by_email(body.email, db)
@@ -147,24 +142,18 @@ async def change_user_role_by_email(
     session: AsyncSession = Depends(get_db),
 ):
     role_access = RoleAccess([Role.admin])
-
-
     await role_access(request=None, user=current_user)
-
-
     user = await session.execute(select(User).where(User.email == email))
     user = user.scalar_one_or_none()
-    
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
-    
     user.role = new_role
     await session.commit()
-
     return {"message": "User role updated successfully"}
+
 
 @router.put("/users/{email}/ban", status_code=status.HTTP_200_OK)
 async def ban_user_by_email(
@@ -173,24 +162,18 @@ async def ban_user_by_email(
     session: AsyncSession = Depends(get_db),
 ):
     role_access = RoleAccess([Role.admin, Role.moderator])
-
-
     await role_access(request=None, user=current_user)
-
-   
     user = await session.execute(select(User).where(User.email == email))
     user = user.scalar_one_or_none()
-    
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
-
     user.banned = True
     await session.commit()
-
     return {"message": "User banned successfully"}
+
 
 @router.put("/users/{email}/unban", status_code=status.HTTP_200_OK)
 async def unban_user_by_email(
