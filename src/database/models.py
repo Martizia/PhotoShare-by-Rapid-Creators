@@ -93,3 +93,31 @@ class TransformedImage(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     link: Mapped[str] = mapped_column(String(150), index=True)
     image_id: Mapped[int] = mapped_column(Integer, ForeignKey("images.id"), nullable=True)
+
+
+class Crop(enum.Enum):
+    crop: str = "crop"
+    scale: str = "scale"
+    fill: str = "fill"
+
+
+class Effect(enum.Enum):
+    al_dente: str = "al_dente"
+    athena: str = "athena"
+    audrey: str = "audrey"
+    aurora: str = "aurora"
+    daguerre: str = "daguerre"
+    fes: str = "fes"
+    hairspray: str = "hairspray"
+    hokusai: str = "hokusai"
+    incognito: str = "incognito"
+    linen: str = "linen"
+    peacock: str = "peacock"
+    primavera: str = "primavera"
+    quartz: str = "quartz"
+    red_rock: str = "red_rock"
+    refresh: str = "refresh"
+    sizzle: str = "sizzle"
+    sonnet: str = "sonnet"
+    ukulele: str = "ukulele"
+    zorro: str = "zorro"
