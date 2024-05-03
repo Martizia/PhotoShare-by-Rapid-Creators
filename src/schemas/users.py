@@ -36,7 +36,7 @@ class RequestEmail(BaseModel):
 
 
 class PasswordResetRequest(BaseModel):
-    email: str
+    email: EmailStr
 
 
 class PasswordReset(BaseModel):
