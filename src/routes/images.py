@@ -5,9 +5,10 @@ import random
 
 from src.database.db import get_db
 from src.database.models import User, Role
-from src.repository.images import create_image, delete_image_db, update_description_db, get_image_db
+from src.repository.images import create_image, delete_image_db, update_description_db, get_image_db, \
+    save_transformed_image, generate_qrcode_by_image, get_transformed_image_db
 from src.config.config import config
-from src.schemas.images import ImageSchema, UpdateImageSchema
+from src.schemas.images import ImageSchema, UpdateDescriptionSchema, UpdateImageSchema, EffectSchema
 from src.services.auth import auth_service
 from src.services.roles import RoleAccess
 
@@ -35,14 +36,14 @@ async def upload_image(file: UploadFile = File(...), body: ImageSchema = Depends
 
 
 @router.delete("/{image_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_image_route(image_id: int, db: AsyncSession = Depends(get_db),
-                             current_user: User = Depends(auth_service.get_current_user)):
+async def delete_image(image_id: int, db: AsyncSession = Depends(get_db),
+                       current_user: User = Depends(auth_service.get_current_user)):
     deleted = await delete_image_db(db, image_id, current_user)
     return deleted
 
 
 @router.put("/{image_id}")
-async def update_description(image_id: int, body: UpdateImageSchema, db: AsyncSession = Depends(get_db),
+async def update_description(image_id: int, body: UpdateDescriptionSchema, db: AsyncSession = Depends(get_db),
                              current_user: User = Depends(auth_service.get_current_user)):
     description = await update_description_db(db, image_id, body, current_user)
     if description is None:
@@ -55,5 +56,40 @@ async def get_image(image_id: int, db: AsyncSession = Depends(get_db),
                     current_user: User = Depends(auth_service.get_current_user)):
     image = await get_image_db(db, image_id, current_user)
     if image is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
     return image
+
+
+@router.post("/{image_id}/crop")
+async def crop_image(image_id: int, size: UpdateImageSchema, db: AsyncSession = Depends(get_db),
+                     current_user: User = Depends(auth_service.get_current_user)):
+    image = await get_image_db(db, image_id, current_user)
+    if image is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
+    public_id = f'PhotoShare(transformed)/{current_user.email}_{random.randint(1, 1000000)}'
+    transformed_image = cloudinary.uploader.upload(image, public_id=public_id,
+                                                   transformation={"crop": f"{size.crop}", "width": f"{size.width}",
+                                                                   "height": f"{size.height}"})
+    link = transformed_image['secure_url']
+    return await save_transformed_image(db, link, image_id)
+
+
+@router.post("/{image_id}/effect")
+async def use_effect(image_id: int, e: EffectSchema, db: AsyncSession = Depends(get_db),
+                     current_user: User = Depends(auth_service.get_current_user)):
+    image = await get_image_db(db, image_id, current_user)
+    if image is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
+    public_id = f'PhotoShare(transformed)/{current_user.email}_{random.randint(1, 1000000)}'
+    transformed_image = cloudinary.uploader.upload(image, public_id=public_id, transformation={"effect": f"art:{e.effect}"})
+    link = transformed_image['secure_url']
+    return await save_transformed_image(db, link, image_id)
+
+
+@router.get("/{image_id}/qrcode")
+async def generate_qrcode(image_id: int, db: AsyncSession = Depends(get_db),
+                          current_user: User = Depends(auth_service.get_current_user)):
+    image = await get_transformed_image_db(db, image_id)
+    if image is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
+    return await generate_qrcode_by_image(image)
