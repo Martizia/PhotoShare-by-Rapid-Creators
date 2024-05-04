@@ -25,14 +25,6 @@ async def create_comment(body: CommentModel, db: AsyncSession, current_user: Use
     :return: The newly created comment.
     :rtype: Comment
     """
-    # print('Body', body)
-    # print('Body - created_at.', body.created_at)
-    # print('Body - updated_at', body.updated_at)
-    # body.created_at.replace(tzinfo=None)
-    # body.updated_at.replace(tzinfo=None)
-    # print('Body - created_at.', body.created_at)
-    # print('Body - updated_at', body.updated_at)
-
     comment = Comment(**body.model_dump(exclude_unset=True), user_id=current_user.id)
     db.add(comment)
     await db.commit()
@@ -64,8 +56,6 @@ async def update_comment(
         await db.commit()
         await db.refresh(comment)
     return comment
-
-
 
 
 async def delete_comment(comment_id: int, db: AsyncSession, current_user: User):

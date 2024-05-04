@@ -8,24 +8,9 @@ from src.schemas.rating import RatingSchema, RatingResponse, RatingAverageRespon
 
 
 async def create_rating(body: RatingSchema, db: AsyncSession, user: User):
-    # Fetch the image from the database
-    print(body.image_id)
-    stmt = select(Image).where(id=body.image_id)
-    result = await db.execute(stmt)
-    image = result.scalar_one_or_none()
-
-    if image is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
-
-    # Create the new rating
-    new_rating = Rating(**body.model_dump(exclude_unset=True), user=user, image=image)
+    new_rating = Rating(**body.model_dump(exclude_unset=True), user_id=user.id)
     if new_rating.rating not in [1, 2, 3, 4, 5]:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid rating value")
-
-    # image = select(Image).filter_by(id=body.image_id)
-    # new_rating = Rating(**body.model_dump(exclude_unset=True), user=user, image=image)
-    # if new_rating.rating not in [1, 2, 3, 4, 5]:
-    #     raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Invalid rating value")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Invalid rating value")
     db.add(new_rating)
     await db.commit()
     await db.refresh(new_rating)
@@ -42,14 +27,20 @@ async def get_average_rating_by_image_id(db: AsyncSession, image_id: int) -> Rat
     return RatingAverageResponse(image_id=image_id, average_rating=average_rating)
 
 
+async def get_image(db: AsyncSession, image_id: int):
+    result = await db.execute(select(Image).where(Image.id == image_id))
+    rating = result.scalar()
+    if not rating:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Image not found")
+    return True
+
+
 async def check_user_rating(db: AsyncSession, user: User, image_id: int):
     result = await db.execute(select(Rating).where(
         Rating.user_id == user.id,
         Rating.image_id == image_id
     ))
     rating = result.scalar()
-    if image_id != Image.id:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Image not found")
     if rating:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="You have already rated this image")
     return True
