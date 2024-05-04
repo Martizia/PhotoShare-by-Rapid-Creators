@@ -14,12 +14,6 @@ image_tag = Table('image_tag', Base.metadata,
                   )
 
 
-image_comment = Table('image_comment', Base.metadata,
-                      Column('image_id', Integer, ForeignKey('images.id')),
-                      Column('comment_id', Integer, ForeignKey('comments.id'))
-                      )
-
-
 class Image(Base):
     __tablename__ = "images"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -27,7 +21,6 @@ class Image(Base):
     description: Mapped[str] = mapped_column(String(250), nullable=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
     tags = relationship("Tag", secondary="image_tag", back_populates="images")
-    comments = relationship("Comment", back_populates="image")
 
 
 class Comment(Base):
@@ -35,14 +28,13 @@ class Comment(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     text: Mapped[str] = mapped_column(String(250), nullable=False)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    image_id: Mapped[int] = mapped_column(Integer, ForeignKey("images.id"), nullable=False)
     created_at: Mapped[date] = mapped_column(
         "created_at", DateTime, default=func.now(), nullable=True
     )
     updated_at: Mapped[date] = mapped_column(
         "updated_at", DateTime, default=func.now(), onupdate=func.now(), nullable=True
     )
-    image_id: Mapped[int] = mapped_column(Integer, ForeignKey("images.id"), nullable=False)
-    image = relationship("Image", back_populates="comments")
 
 
 class Tag(Base):
@@ -79,7 +71,7 @@ class User(Base):
 class Rating(Base):
     __tablename__ = "ratings"
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     user: Mapped["User"] = relationship("User", backref="ratings", lazy="joined")
     image_id: Mapped[int] = mapped_column(Integer, ForeignKey("images.id"), nullable=False)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)

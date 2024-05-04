@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.db import get_db
 from src.database.models import Rating, User, Image
 from src.repository import rating as repository_rating
+from src.repository import images as repository_image
 from src.schemas.rating import RatingResponse, RatingSchema, RatingAverageResponse
 from src.services.auth import auth_service
 
@@ -15,6 +16,7 @@ router = APIRouter(prefix="/rating", tags=["rating"])
 async def create_rating(body: RatingSchema, db: AsyncSession = Depends(get_db),
                         user: User = Depends(auth_service.get_current_user),
                         ):
+    await repository_rating.get_image(db, body.image_id)
     await repository_rating.check_user_rating(db, user, body.image_id)
     await repository_rating.check_image_owner(db, user, body.image_id)
     rating = await repository_rating.create_rating(body, db, user)

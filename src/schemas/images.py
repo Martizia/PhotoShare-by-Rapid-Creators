@@ -13,4 +13,4 @@ class UpdateDescriptionSchema(BaseModel):
 
 class UpdateImageSchema(BaseModel):
     width: int = Field(le=1000)
-    height: int = Field(le=600)
+    height: int = Field(le=1000)

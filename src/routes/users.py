@@ -53,15 +53,16 @@ async def get_user_by_id(
 
 
 @router.put(
-    "/{user_id}",
+    "/",
     description="No more than 3 requests per minute",
     dependencies=[Depends(RateLimiter(times=3, seconds=60))],
 )
 async def update_my_name(
     name: str,
     user: User = Depends(auth_service.get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db)
 ):
+
     user = await repository_users.update_my_name(user, name, db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="NOT FOUND")

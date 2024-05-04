@@ -89,9 +89,8 @@ async def update_my_name(
         user: User,
         name: str,
         db: AsyncSession):
-    if user:
-        if user.username != name:
-            user.username = name
+    user = await get_user_by_id(user.id, db)
+    user.username = name
     user.updated_at = datetime.now()
     await db.commit()
     await db.refresh(user)

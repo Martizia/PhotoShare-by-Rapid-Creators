@@ -5,12 +5,14 @@ from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.db import get_db
-from src.database.models import User
+from src.database.models import User, Role
 from src.repository import comments as repository_comments
 from src.schemas.comments import CommentModel, CommentUpdateSchema
 from src.services.auth import auth_service
+from src.repository.rating import get_image
+from src.services.roles import RoleAccess
 
-router = APIRouter(prefix='/comments', tags=["commentss"])
+router = APIRouter(prefix='/comments', tags=["comments"])
 
 
 @router.post(
@@ -38,11 +40,11 @@ async def create_comment(
     :return: The newly created comment.
     :rtype: Comment
     """
+    await get_image(db, body.image_id)
     if body is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="NO Commnet")
-    else:
-        comment = await repository_comments.create_comment(body, db, current_user)
-        return comment
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Comment is empty")
+    comment = await repository_comments.create_comment(body, db, current_user)
+    return comment
     
 
 @router.put(
@@ -81,9 +83,6 @@ async def update_comment(
     return comment
 
 
-
-
-
 @router.delete(
     "/{comment_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -108,5 +107,7 @@ async def delete_comment(
     :return: The deleted comment.
     :rtype: Comment
     """
+    role_access = RoleAccess([Role.admin, Role.moderator])
+    await role_access(request=None, user=current_user)
     comment = await repository_comments.delete_comment(comment_id, db, current_user)
     return comment
