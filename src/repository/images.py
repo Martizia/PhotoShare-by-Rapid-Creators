@@ -73,3 +73,10 @@ async def get_transformed_image_db(db: AsyncSession, image_id: int):
     result = await db.execute(query)
     result_one = result.scalar_one_or_none()
     return result_one
+
+
+async def search_images_by_query(db: AsyncSession, query: str):
+    query = select(Image).filter(Image.description.ilike(f"%{query}%"))
+    result = await db.execute(query)
+    result = result.scalars().all()
+    return result

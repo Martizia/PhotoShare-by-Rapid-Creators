@@ -7,12 +7,11 @@ import random
 from src.database.db import get_db
 from src.database.models import User, Role, Effect, Crop
 from src.repository.images import create_image, delete_image_db, update_description_db, get_image_db, \
-    save_transformed_image, generate_qrcode_by_image, get_transformed_image_db
+    save_transformed_image, generate_qrcode_by_image, get_transformed_image_db, search_images_by_query
 from src.config.config import config
 from src.schemas.images import ImageSchema, UpdateDescriptionSchema, UpdateImageSchema
 from src.services.auth import auth_service
 from src.services.roles import RoleAccess
-
 
 cloudinary.config(
     cloud_name=config.CLOUDINARY_NAME,
@@ -105,3 +104,10 @@ async def generate_qrcode(image_id: int, db: AsyncSession = Depends(get_db),
     if image is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
     return await generate_qrcode_by_image(image.link)
+
+
+@router.get("/search", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
+async def search_images(query: str, db: AsyncSession = Depends(get_db),
+                        current_user: User = Depends(auth_service.get_current_user)):
+    images = await search_images_by_query(db, query)
+    return images

@@ -1,15 +1,8 @@
-from random import randint
-
-from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.database.db import get_db
 from src.database.models import User, Comment
 from src.schemas.comments import CommentModel, CommentUpdateSchema
-# import pytz
-
-# utc_timezone = pytz.timezone('UTC')
 
 
 async def create_comment(body: CommentModel, db: AsyncSession, current_user: User):

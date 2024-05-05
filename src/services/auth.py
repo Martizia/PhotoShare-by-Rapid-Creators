@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config.config import config
 from src.database.db import get_db
-from src.database.models import User, Role
+from src.database.models import Role
 from src.repository import users as repository_users
 
 from passlib.context import CryptContext
