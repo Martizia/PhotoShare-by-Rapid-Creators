@@ -1,11 +1,13 @@
 from pathlib import Path
-
+from fastapi import FastAPI
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from fastapi_mail.errors import ConnectionErrors
+from fastapi.staticfiles import StaticFiles
 from pydantic import EmailStr
 
 from src.config.config import config
 from src.services.auth import auth_service
+
 
 conf = ConnectionConfig(
     MAIL_USERNAME=config.MAIL_USERNAME,
@@ -23,6 +25,18 @@ conf = ConnectionConfig(
 
 
 async def send_email(email: EmailStr, username: str, host: str):
+    """
+    Send email verification to user with token
+
+    :param email: email of user
+    :type email: EmailStr
+    :param username: username of user
+    :type username: str
+    :param host: base url
+    :type host: str
+    :return: None
+    :rtype: None
+    """
     try:
         token_verification = auth_service.create_email_token({"sub": email})
         message = MessageSchema(
@@ -40,6 +54,20 @@ async def send_email(email: EmailStr, username: str, host: str):
 
 
 async def send_password_reset_email(email: EmailStr, username: str, reset_token: str, host: str):
+    """
+    Send password reset link to user's email address
+
+    :param email: Email address of user
+    :type email: EmailStr
+    :param username: Username of user
+    :type username: str
+    :param reset_token: Password reset token
+    :type reset_token: str
+    :param host: Base url
+    :type host: str
+    :return: None
+    :rtype: None
+    """
     try:
         message = MessageSchema(
             subject="Password Reset",

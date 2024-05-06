@@ -25,6 +25,7 @@ python-dotenv = "^1.0.1"
 cloudinary = "^1.40.0"
 pydantic-settings = "^2.2.1"
 qrcode = "^7.4.2"
+sphinx = "^7.3.7"
 
 
 [build-system]

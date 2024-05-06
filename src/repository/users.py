@@ -11,6 +11,16 @@ from datetime import datetime
 
 
 async def get_user_by_email(email: str, db: AsyncSession = Depends(get_db)):
+    """
+    Get user by email
+
+    :param email: The email of the user
+    :type email: str
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: The user
+    :rtype: User
+    """
     stmt = select(User).filter_by(email=email)
     user = await db.execute(stmt)
     user = user.scalar_one_or_none()
@@ -18,6 +28,16 @@ async def get_user_by_email(email: str, db: AsyncSession = Depends(get_db)):
 
 
 async def create_user(body: UserModel, db: AsyncSession = Depends(get_db)):
+    """
+    Creates a new user.
+
+    :param body: The data for the new user.
+    :type body: UserModel
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: The created user
+    :rtype: User
+    """
     avatar = None
     try:
         g = Gravatar(body.email)
@@ -33,17 +53,51 @@ async def create_user(body: UserModel, db: AsyncSession = Depends(get_db)):
 
 
 async def update_token(user: User, refresh_token: str | None, db: AsyncSession = Depends(get_db)):
+    """
+    Updates the refresh token for a user.
+
+    :param user: The user to update
+    :type user: User
+    :param refresh_token: The new refresh token
+    :type refresh_token: str | None
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: The updated user
+    :rtype: User
+    """
     user.refresh_token = refresh_token
     await db.commit()
 
 
 async def confirmed_email(email: str, db: AsyncSession) -> None:
+    """
+    Confirms an email.
+
+    :param email: The email to confirm
+    :type email: str
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: None
+    :rtype: None
+    """
     user = await get_user_by_email(email, db)
     user.confirmed = True
     await db.commit()
 
 
 async def update_avatar_url(email: str, url: str | None, db: AsyncSession) -> User:
+    """
+    Updates the avatar url for a user.
+
+    :param email: The email of the user
+    :type email: str
+    :param url: The new avatar url
+    :type url: str | None
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: The updated user
+    :rtype: User
+    """
     user = await get_user_by_email(email, db)
     user.avatar = url
     await db.commit()
@@ -51,7 +105,19 @@ async def update_avatar_url(email: str, url: str | None, db: AsyncSession) -> Us
     return user
 
 
-async def store_reset_token(email: str, token: str, db: AsyncSession = Depends(get_db)):
+async def store_reset_token(email: str, token: str, db: AsyncSession = Depends(get_db)) -> User:
+    """
+    Stores a reset token for a user.
+
+    :param email: The email of the user
+    :type email: str
+    :param token: The reset token
+    :type token: str
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: The updated user
+    :rtype: User
+    """
     user = await get_user_by_email(email, db)
     user.reset_token = token
     await db.commit()
@@ -59,14 +125,38 @@ async def store_reset_token(email: str, token: str, db: AsyncSession = Depends(g
     return user
 
 
-async def verify_reset_token(email: str, token: str, db: AsyncSession = Depends(get_db)):
+async def verify_reset_token(email: str, token: str, db: AsyncSession = Depends(get_db)) -> bool:
+    """
+    Verifies if a reset token is valid.
+
+    :param email: The email of the user
+    :type email: str
+    :param token: The reset token
+    :type token: str
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: True if the token is valid, False otherwise
+    :rtype: bool
+    """
     user = await get_user_by_email(email, db)
     if user is not None and user.reset_token == token:
         return True
     return False
 
 
-async def update_password(email: str, new_password: str, db: AsyncSession = Depends(get_db)):
+async def update_password(email: str, new_password: str, db: AsyncSession = Depends(get_db)) -> User | None:
+    """
+    Updates the password for a user.
+
+    :param email: The email of the user
+    :type email: str
+    :param new_password: The new password
+    :type new_password: str
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: The updated user
+    :rtype: User | None
+    """
     from src.services.auth import auth_service
     user = await get_user_by_email(email, db)
     if user is not None:
@@ -77,21 +167,51 @@ async def update_password(email: str, new_password: str, db: AsyncSession = Depe
     return None
 
 
-async def count_user_images(user_id, db: AsyncSession):
+async def count_user_images(user_id, db: AsyncSession) -> int:
+    """
+    Counts the number of images for a user.
+
+    :param user_id: The ID of the user
+    :type user_id: int
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: The number of images
+    :rtype: int
+    """
     stmt = select(Image).where(Image.user_id == user_id)
     result = await db.execute(stmt)
     images = result.scalars().all()
     return len(images)
 
 
-async def count_user_ratings(user_id, db: AsyncSession):
+async def count_user_ratings(user_id, db: AsyncSession) -> int:
+    """
+    Counts the number of ratings for a user.
+
+    :param user_id: The ID of the user
+    :type user_id: int
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: The number of ratings
+    :rtype: int
+    """
     stmt = select(Rating).where(Rating.user_id == user_id)
     result = await db.execute(stmt)
     images = result.scalars().all()
     return len(images)
 
 
-async def get_user_by_id(user_id: int, db: AsyncSession):
+async def get_user_by_id(user_id: int, db: AsyncSession) -> User | None:
+    """
+    Gets a user by ID.
+
+    :param user_id: The ID of the user
+    :type user_id: int
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: The user
+    :rtype: User | None
+    """
     stmt = select(User).filter_by(id=user_id)
     user = await db.execute(stmt)
     result = user.scalar_one_or_none()
@@ -101,7 +221,19 @@ async def get_user_by_id(user_id: int, db: AsyncSession):
 async def update_my_name(
         user: User,
         name: str,
-        db: AsyncSession):
+        db: AsyncSession) -> User:
+    """
+    Updates the name of a user.
+
+    :param user: The user to update the name
+    :type user: User
+    :param name: The new name for current user
+    :type name: str
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: The updated user
+    :rtype: User
+    """
     user = await get_user_by_id(user.id, db)
     user.username = name
     user.updated_at = datetime.now()
@@ -110,12 +242,22 @@ async def update_my_name(
     return user
 
 
-async def delete_user(user_id: int, db: AsyncSession):
+async def delete_user(user_id: int, db: AsyncSession) -> dict:
+    """
+    Deletes a user.
+
+    :param user_id: The ID of the user
+    :type user_id: int
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: A dictionary with a message
+    :rtype: dict
+    """
     stmt = select(User).filter_by(id=user_id)
     user = await db.execute(stmt)
     user = user.scalar_one_or_none()
     if user:
         await db.delete(user)
         await db.commit()
-    return f'{user.username} deleted'
+    return {"message": "User deleted"}
 

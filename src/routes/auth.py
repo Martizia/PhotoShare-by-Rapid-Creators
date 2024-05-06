@@ -14,20 +14,33 @@ from src.schemas.users import RequestEmail, TokenModel, UserModel, UserResponse,
 from src.services.auth import auth_service, add_blacklist_token
 from src.services.email import send_email, send_password_reset_email
 
-
 CREDENTIALS_EXCEPTION = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail='Could not validate credentials',
     headers={'WWW-Authenticate': 'Bearer'},
 )
 
-
 router = APIRouter(prefix='/auth', tags=["Authorization"])
 get_refresh_token = HTTPBearer()
 
 
 @router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def signup(body: UserModel, background_tasks: BackgroundTasks, request: Request, db: AsyncSession = Depends(get_db)):
+async def signup(body: UserModel, background_tasks: BackgroundTasks, request: Request,
+                 db: AsyncSession = Depends(get_db)):
+    """
+    Create new user
+
+    :param body: The data for the new user
+    :type body: UserModel
+    :param background_tasks: Background tasks
+    :type background_tasks: BackgroundTasks
+    :param request: Request base url
+    :type request: Request
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: The created user
+    :rtype: User
+    """
     exist_user = await repository_users.get_user_by_email(body.email, db)
     if exist_user:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Account already exists")
@@ -39,6 +52,16 @@ async def signup(body: UserModel, background_tasks: BackgroundTasks, request: Re
 
 @router.post("/login", response_model=TokenModel, status_code=status.HTTP_200_OK)
 async def login(body: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
+    """
+    Login user
+
+    :param body: The data for the login
+    :type body: OAuth2PasswordRequestForm
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: The access and refresh tokens
+    :rtype: TokenModel
+    """
     user = await repository_users.get_user_by_email(body.username, db)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email address")
@@ -54,6 +77,14 @@ async def login(body: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = 
 
 @router.get('/logout')
 def logout(token: str = Depends(auth_service.get_current_user_token)):
+    """
+    Logout user
+
+    :param token: The access token
+    :type token: str
+    :return: The result of the logout
+    :rtype: JSONResponse
+    """
     if add_blacklist_token(token):
         return JSONResponse({'result': True})
     raise CREDENTIALS_EXCEPTION
@@ -61,7 +92,20 @@ def logout(token: str = Depends(auth_service.get_current_user_token)):
 
 @router.get('/refresh_token', response_model=TokenModel)
 async def refresh_token(credentials: HTTPAuthorizationCredentials = Depends(get_refresh_token),
-                        db: AsyncSession = Depends(get_db), current_user: User = Depends(auth_service.get_current_user)):
+                        db: AsyncSession = Depends(get_db),
+                        current_user: User = Depends(auth_service.get_current_user)):
+    """
+    Refreshes access token
+
+    :param credentials: Credentials for the refresh token
+    :type credentials: HTTPAuthorizationCredentials
+    :param db: The async database session
+    :type db: AsyncSession
+    :param current_user: The current user
+    :type current_user: User
+    :return: The access and refresh tokens
+    :rtype: Token
+    """
     token = credentials.credentials
     email = await auth_service.decode_refresh_token(token)
     user = await repository_users.get_user_by_email(email, db)
@@ -78,6 +122,16 @@ async def refresh_token(credentials: HTTPAuthorizationCredentials = Depends(get_
 @router.get('/confirmed_email/{token}')
 async def confirmed_email(token: str,
                           db: AsyncSession = Depends(get_db)):
+    """
+    Confirms email address for user with given token
+
+    :param token: Token for email confirmation
+    :type token: str
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: The result of the email confirmation
+    :rtype: JSONResponse
+    """
     email = await auth_service.get_email_from_token(token)
     user = await repository_users.get_user_by_email(email, db)
     if user is None:
@@ -91,6 +145,20 @@ async def confirmed_email(token: str,
 @router.post('/request_email')
 async def request_email(body: RequestEmail, background_tasks: BackgroundTasks, request: Request,
                         db: AsyncSession = Depends(get_db)):
+    """
+    Requests email confirmation for user with given email address
+
+    :param body: Email address for email confirmation
+    :type body: RequestEmail
+    :param background_tasks: Background tasks for sending email
+    :type background_tasks: BackgroundTasks
+    :param request: Request base url
+    :type request: Request
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: The result of the email request
+    :rtype: JSONResponse
+    """
     user = await repository_users.get_user_by_email(body.email, db)
     if user:
         if user.confirmed:
@@ -104,6 +172,18 @@ async def request_email(body: RequestEmail, background_tasks: BackgroundTasks, r
 
 @router.post("/forgot_password")
 async def forgot_password(body: PasswordResetRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Sends password reset link to user's email address
+
+    :param body: Email address for password reset
+    :type body: PasswordResetRequest
+    :param request: Request base url
+    :type request: Request
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: The result of the password reset
+    :rtype: JSONResponse
+    """
     user = await repository_users.get_user_by_email(body.email, db)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
@@ -117,6 +197,18 @@ async def forgot_password(body: PasswordResetRequest, request: Request, db: Asyn
 
 @router.post("/reset_password/{token}")
 async def reset_password(body: PasswordReset, db: AsyncSession = Depends(get_db)):
+    """
+    Resets password for user with given token
+
+    :param token: Token for password reset
+    :type token: str
+    :param body: New password for user
+    :type body: PasswordReset
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: The result of the password reset
+    :rtype: JSONResponse
+    """
     email = await auth_service.get_email_from_token(body.token)
     user = await repository_users.get_user_by_email(email, db)
 
@@ -130,11 +222,25 @@ async def reset_password(body: PasswordReset, db: AsyncSession = Depends(get_db)
 
 @router.put("/users/{email}/role", status_code=status.HTTP_200_OK)
 async def change_user_role_by_email(
-    email: str,
-    new_role: Role,
-    current_user: User = Depends(auth_service.get_current_user),
-    session: AsyncSession = Depends(get_db),
+        email: str,
+        new_role: Role,
+        current_user: User = Depends(auth_service.get_current_user),
+        session: AsyncSession = Depends(get_db),
 ):
+    """
+    Changes user role by email
+
+    :param email: Email of the user to change role
+    :type email: str
+    :param new_role: New role for the user
+    :type new_role: Role
+    :param current_user: The current user
+    :type current_user: User
+    :param session: The async database session
+    :type session: AsyncSession
+    :return: The result of the role change
+    :rtype: JSONResponse
+    """
     role_access = RoleAccess([Role.admin])
     await role_access(request=None, user=current_user)
     user = await session.execute(select(User).where(User.email == email))
@@ -151,10 +257,22 @@ async def change_user_role_by_email(
 
 @router.put("/users/{email}/ban", status_code=status.HTTP_200_OK)
 async def ban_user_by_email(
-    email: str,
-    current_user: User = Depends(auth_service.get_current_user),
-    session: AsyncSession = Depends(get_db),
+        email: str,
+        current_user: User = Depends(auth_service.get_current_user),
+        session: AsyncSession = Depends(get_db),
 ):
+    """
+    Bans user by email
+
+    :param email: Email of the user to ban
+    :type email: str
+    :param current_user: The current user
+    :type current_user: User
+    :param session: The async database session
+    :type session: AsyncSession
+    :return: The result of the ban
+    :rtype: JSONResponse
+    """
     role_access = RoleAccess([Role.admin, Role.moderator])
     await role_access(request=None, user=current_user)
     user = await session.execute(select(User).where(User.email == email))
@@ -171,17 +289,29 @@ async def ban_user_by_email(
 
 @router.put("/users/{email}/unban", status_code=status.HTTP_200_OK)
 async def unban_user_by_email(
-    email: str,
-    current_user: User = Depends(auth_service.get_current_user),
-    session: AsyncSession = Depends(get_db),
+        email: str,
+        current_user: User = Depends(auth_service.get_current_user),
+        session: AsyncSession = Depends(get_db),
 ):
+    """
+    Unbans user by email
+
+    :param email: Email of the user to unban
+    :type email: str
+    :param current_user: The current user
+    :type current_user: User
+    :param session: The async database session
+    :type session: AsyncSession
+    :return: The result of the unban
+    :rtype: JSONResponse
+    """
     role_access = RoleAccess([Role.admin, Role.moderator])
 
     await role_access(request=None, user=current_user)
 
     user = await session.execute(select(User).where(User.email == email))
     user = user.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

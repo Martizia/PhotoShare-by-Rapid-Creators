@@ -30,6 +30,20 @@ access_to_route_all = RoleAccess([Role.admin])
 @router.post("/", status_code=status.HTTP_201_CREATED, dependencies=[Depends(RateLimiter(times=1, seconds=10))])
 async def upload_image(file: UploadFile = File(...), body: ImageSchema = Depends(ImageSchema),
                        db: AsyncSession = Depends(get_db), current_user: User = Depends(auth_service.get_current_user)):
+    """
+    Uploads an image for the authenticated user.
+
+    :param file: The image file to upload.
+    :type file: UploadFile
+    :param body: The data for the new image.
+    :type body: ImageSchema
+    :param db: The database session.
+    :type db: AsyncSession
+    :param current_user: The currently authenticated user.
+    :type current_user: User
+    :return: The newly created image.
+    :rtype: Image
+    """
     max_size = 5 * 1024 * 1024  # 5MB in bytes
     file_content = await file.read()
     file_size = len(file_content)
@@ -45,15 +59,41 @@ async def upload_image(file: UploadFile = File(...), body: ImageSchema = Depends
                dependencies=[Depends(RateLimiter(times=1, seconds=10))])
 async def delete_image(image_id: int, db: AsyncSession = Depends(get_db),
                        current_user: User = Depends(auth_service.get_current_user)):
+    """
+    Deletes the image with the given ID for the authenticated user.
+
+    :param image_id: The ID of the image to delete.
+    :type image_id: int
+    :param db: The database session.
+    :type db: AsyncSession
+    :param current_user: The currently authenticated user.
+    :type current_user: User
+    :return: A message indicating that the image was deleted.
+    :rtype: dict
+    """
     deleted = await delete_image_db(db, image_id, current_user)
     if deleted is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
-    return deleted
+    return {"message": "Image deleted"}
 
 
 @router.put("/{image_id}", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
 async def update_description(image_id: int, body: UpdateDescriptionSchema, db: AsyncSession = Depends(get_db),
                              current_user: User = Depends(auth_service.get_current_user)):
+    """
+    Updates the description of the image with the given ID for the authenticated user.
+
+    :param image_id: The ID of the image to update.
+    :type image_id: int
+    :param body: The new description for the image.
+    :type body: UpdateDescriptionSchema
+    :param db: The database session.
+    :type db: AsyncSession
+    :param current_user: The currently authenticated user.
+    :type current_user: User
+    :return: The updated image.
+    :rtype: Image
+    """
     description = await update_description_db(db, image_id, body, current_user)
     if description is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
@@ -63,6 +103,18 @@ async def update_description(image_id: int, body: UpdateDescriptionSchema, db: A
 @router.get("/{image_id}", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
 async def get_image(image_id: int, db: AsyncSession = Depends(get_db),
                     current_user: User = Depends(auth_service.get_current_user)):
+    """
+    Retrieves the image with the given ID for the authenticated user.
+
+    :param image_id: The ID of the image to retrieve.
+    :type image_id: int
+    :param db: The async database session.
+    :type db: AsyncSession
+    :param current_user: The currently authenticated user.
+    :type current_user: User
+    :return: The retrieved image.
+    :rtype: Image
+    """
     image = await get_image_db(db, image_id, current_user)
     if image is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
@@ -72,6 +124,22 @@ async def get_image(image_id: int, db: AsyncSession = Depends(get_db),
 @router.post("/{image_id}/crop", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
 async def crop_image(image_id: int, size: UpdateImageSchema, crop: Crop, db: AsyncSession = Depends(get_db),
                      current_user: User = Depends(auth_service.get_current_user)):
+    """
+    Crops the image with the given ID for the authenticated user.
+
+    :param image_id: The ID of the image to crop.
+    :type image_id: int
+    :param size: The new size of the image.
+    :type size: UpdateImageSchema
+    :param crop: The new crop of the image.
+    :type crop: Crop
+    :param db: The database session.
+    :type db: AsyncSession
+    :param current_user: The currently authenticated user.
+    :type current_user: User
+    :return: The cropped image.
+    :rtype: Image
+    """
     image = await get_image_db(db, image_id, current_user)
     if image is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
@@ -87,6 +155,20 @@ async def crop_image(image_id: int, size: UpdateImageSchema, crop: Crop, db: Asy
 @router.post("/{image_id}/effect", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
 async def use_effect(image_id: int, e: Effect, db: AsyncSession = Depends(get_db),
                      current_user: User = Depends(auth_service.get_current_user)):
+    """
+    Applies the effect to the image with the given ID for the authenticated user.
+
+    :param image_id: The ID of the image to apply the effect to.
+    :type image_id: int
+    :param e: The effect to apply.
+    :type e: Effect
+    :param db: The database session.
+    :type db: AsyncSession
+    :param current_user: The currently authenticated user.
+    :type current_user: User
+    :return: The transformed image.
+    :rtype: Image
+    """
     image = await get_image_db(db, image_id, current_user)
     if image is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
@@ -100,6 +182,18 @@ async def use_effect(image_id: int, e: Effect, db: AsyncSession = Depends(get_db
 @router.get("/{image_id}/qrcode", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
 async def generate_qrcode(image_id: int, db: AsyncSession = Depends(get_db),
                           current_user: User = Depends(auth_service.get_current_user)):
+    """
+    Generates a QR code for the image with the given ID for the authenticated user.
+
+    :param image_id: The ID of the image to generate the QR code for.
+    :type image_id: int
+    :param db: The database session.
+    :type db: AsyncSession
+    :param current_user: The currently authenticated user.
+    :type current_user: User
+    :return: The generated QR code.
+    :rtype: Image
+    """
     image = await get_transformed_image_db(db, image_id)
     if image is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
