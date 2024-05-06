@@ -8,6 +8,8 @@ from starlette.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_limiter import FastAPILimiter
 import redis.asyncio as redis
+from fastapi.staticfiles import StaticFiles
+
 from middlewares import CustomHeaderMiddleware
 from src.database.db import get_db
 from src.config.config import config
@@ -36,6 +38,7 @@ app.include_router(rating.router, prefix='/api')
 
 BASE_DIR = Path(".")
 
+app.mount("/static", StaticFiles(directory="src/services/static"), name="static")
 
 @app.on_event("startup")
 async def startup():

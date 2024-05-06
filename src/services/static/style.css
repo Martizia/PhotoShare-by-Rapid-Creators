@@ -3,12 +3,11 @@ body {
     margin: 0;
     padding: 0;
     text-align: center;
-    align: center;
 }
 
 .container {
     width: 1000px;
-    background-color: #eee;
+    background-color: #fff;
     margin: 0 auto;
     display: flex;
 }
@@ -65,5 +64,20 @@ a {
     font-family:'Montserrat bold'Helvetica, Arial, sans-serif;
     font-size: 12px;
     line-height: 25px;
+    padding: 10px 0;
+}
+
+.content  {
+    text-align: left;
+    padding: 20px 20px;
+}
+
+.developer-name {
+    color: #000;
+    font-family: 'Londrina Solid'Helvetica, Arial, sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    line-height: 35px;
     padding: 10px 0;
 }
