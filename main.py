@@ -1,22 +1,20 @@
+import os
 from pathlib import Path
 from fastapi import FastAPI, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from starlette.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_limiter import FastAPILimiter
 import redis.asyncio as redis
-from middlewares import (BlackListMiddleware, CustomCORSMiddleware,
-                         CustomHeaderMiddleware, UserAgentBanMiddleware,
-                         WhiteListMiddleware)
+from fastapi.staticfiles import StaticFiles
+
+from middlewares import CustomHeaderMiddleware
 from src.database.db import get_db
 from src.config.config import config
 from src.routes import comments, auth, users, images, rating
 from src.services.auth import init_blacklist_file
-
-import uvicorn
 
 import uvicorn
 
@@ -40,9 +38,7 @@ app.include_router(rating.router, prefix='/api')
 
 BASE_DIR = Path(".")
 
-
-# app.mount("/static", StaticFiles(directory=BASE_DIR / "src" / "static"), name="static")
-
+app.mount("/static", StaticFiles(directory="src/services/static"), name="static")
 
 @app.on_event("startup")
 async def startup():
@@ -50,11 +46,12 @@ async def startup():
                           password=config.REDIS_PASSWORD, encoding="utf-8",
                           decode_responses=True)
     await FastAPILimiter.init(r)
-templates = Jinja2Templates(directory=BASE_DIR / "src" / "templates")  # noqa
+
 
 @app.get("/", response_class=HTMLResponse)
-def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request, "target": "Go IT Students"})
+def read_root():
+    index_html_path = os.path.join("src", "services", "templates", "index.html")
+    return FileResponse(index_html_path)
 
 
 @app.get('/api/healthchecker')

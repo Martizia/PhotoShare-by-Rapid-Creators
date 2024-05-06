@@ -1,13 +1,12 @@
-from random import randint
 from fastapi import Depends
 from libgravatar import Gravatar
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.db import get_db
-from src.database.models import User
+from src.database.models import User, Image, Rating
 
-from src.schemas.users import UserModel, UserUpdateMyName
+from src.schemas.users import UserModel
 from datetime import datetime
 
 
@@ -76,6 +75,20 @@ async def update_password(email: str, new_password: str, db: AsyncSession = Depe
         await db.commit()
         return user
     return None
+
+
+async def count_user_images(user_id, db: AsyncSession):
+    stmt = select(Image).where(Image.user_id == user_id)
+    result = await db.execute(stmt)
+    images = result.scalars().all()
+    return len(images)
+
+
+async def count_user_ratings(user_id, db: AsyncSession):
+    stmt = select(Rating).where(Rating.user_id == user_id)
+    result = await db.execute(stmt)
+    images = result.scalars().all()
+    return len(images)
 
 
 async def get_user_by_id(user_id: int, db: AsyncSession):

@@ -13,7 +13,6 @@ from src.schemas.images import ImageSchema, UpdateDescriptionSchema, UpdateImage
 from src.services.auth import auth_service
 from src.services.roles import RoleAccess
 
-
 cloudinary.config(
     cloud_name=config.CLOUDINARY_NAME,
     api_key=config.CLOUDINARY_API_KEY,
