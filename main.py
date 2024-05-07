@@ -37,7 +37,7 @@ app.include_router(comments.router, prefix='/api')
 app.include_router(rating.router, prefix='/api')
 
 
-# app.mount("/static", StaticFiles(directory="src/services/static"), name="static")
+app.mount("/static", StaticFiles(directory="src/services/static"), name="static")
 
 
 @app.on_event("startup")
