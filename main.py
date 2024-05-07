@@ -36,8 +36,6 @@ app.include_router(images.router, prefix='/api')
 app.include_router(comments.router, prefix='/api')
 app.include_router(rating.router, prefix='/api')
 
-# BASE_DIR = Path(".")
-# app.mount("/static", StaticFiles(directory=BASE_DIR / "src" / "services" / "static"), name="static")
 
 # app.mount("/static", StaticFiles(directory="src/services/static"), name="static")
 
