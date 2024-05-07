@@ -1,8 +1,6 @@
 from pathlib import Path
-from fastapi import FastAPI
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from fastapi_mail.errors import ConnectionErrors
-from fastapi.staticfiles import StaticFiles
 from pydantic import EmailStr
 
 from src.config.config import config

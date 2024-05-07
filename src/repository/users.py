@@ -264,6 +264,16 @@ async def delete_user(user_id: int, db: AsyncSession) -> dict:
 
 
 async def search_users(search_string: str, db: AsyncSession):
+    """
+    Searches for users by username or email.
+
+    :param search_string: The string to search for
+    :type search_string: str
+    :param db: The async database session
+    :type db: AsyncSession
+    :return: A list of users
+    :rtype: list
+    """
     query = select(User).filter(
         or_(
             User.username.ilike(f"%{search_string}%"),

@@ -20,7 +20,7 @@ cloudinary.config(cloud_name=config.CLOUDINARY_NAME,
                   secure=True)
 
 
-@router.get('/me', response_model=UserProfile, dependencies=[Depends(RateLimiter(times=1, seconds=20))])
+@router.get('/me', response_model=UserProfile, dependencies=[Depends(RateLimiter(times=1, seconds=10))])
 async def get_my_user(my_user: User = Depends(auth_service.get_current_user), db: AsyncSession = Depends(get_db)):
     """
     Returns the profile of the currently authenticated user.
@@ -158,7 +158,19 @@ async def delete_user(
   
 @router.get("/search/{search_query}", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
 async def search_users(search_query: str = Path(..., min_length=1), db: AsyncSession = Depends(get_db),
-                       current_user: User = Depends(auth_service.get_admin)):
+                       current_user: User = Depends(auth_service.get_current_user)):
+    """
+    Searches for users by username or email. Available for all users.
+
+    :param search_query: The query to search for
+    :type search_query: str
+    :param db: The async database session
+    :type db: AsyncSession
+    :param current_user: The currently authenticated user
+    :type current_user: User
+    :return: A list of users
+    :rtype: List[User]
+    """
     users_by_query = await repository_users.search_users(search_query, db)
     if len(users_by_query) == 0:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Users with this query not found")

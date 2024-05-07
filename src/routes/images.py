@@ -6,11 +6,9 @@ import random
 
 from src.database.db import get_db
 from src.database.models import User, Role, Effect, Crop, SortBy
-from src.repository.images import create_image, delete_image_db, update_description_db, get_image_db, \
-    save_transformed_image, generate_qrcode_by_image, get_transformed_image_db, search_images_by_description_or_tag, \
-    sorter
+from src.repository import images as repository_images
 from src.config.config import config
-from src.schemas.images import ImageSchema, UpdateDescriptionSchema, UpdateImageSchema
+from src.schemas.images import ImageSchema, UpdateDescriptionSchema, UpdateImageSchema, ImageResponse
 from src.services.auth import auth_service
 from src.services.roles import RoleAccess
 
@@ -53,7 +51,7 @@ async def upload_image(file: UploadFile = File(...), body: ImageSchema = Depends
     public_id = f'PhotoShare/{current_user.email}_{random.randint(1, 1000000)}'
     result = cloudinary.uploader.upload(file_content, public_id=public_id, overwrite=True)
     link = result['secure_url']
-    return await create_image(db, link, body, current_user)
+    return await repository_images.create_image(db, link, body, current_user)
 
 
 @router.delete("/{image_id}", status_code=status.HTTP_204_NO_CONTENT,
@@ -72,7 +70,7 @@ async def delete_image(image_id: int, db: AsyncSession = Depends(get_db),
     :return: A message indicating that the image was deleted.
     :rtype: dict
     """
-    deleted = await delete_image_db(db, image_id, current_user)
+    deleted = await repository_images.delete_image_db(db, image_id, current_user)
     if deleted is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
     return {"message": "Image deleted"}
@@ -95,7 +93,7 @@ async def update_description(image_id: int, body: UpdateDescriptionSchema, db: A
     :return: The updated image.
     :rtype: Image
     """
-    description = await update_description_db(db, image_id, body, current_user)
+    description = await repository_images.update_description_db(db, image_id, body, current_user)
     if description is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
     return description
@@ -116,7 +114,7 @@ async def get_image(image_id: int, db: AsyncSession = Depends(get_db),
     :return: The retrieved image.
     :rtype: Image
     """
-    image = await get_image_db(db, image_id, current_user)
+    image = await repository_images.get_image_db(db, image_id, current_user)
     if image is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
     return image
@@ -141,7 +139,7 @@ async def crop_image(image_id: int, size: UpdateImageSchema, crop: Crop, db: Asy
     :return: The cropped image.
     :rtype: Image
     """
-    image = await get_image_db(db, image_id, current_user)
+    image = await repository_images.get_image_db(db, image_id, current_user)
     if image is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
 
@@ -150,7 +148,7 @@ async def crop_image(image_id: int, size: UpdateImageSchema, crop: Crop, db: Asy
                                                    transformation={"crop": f"{crop.value}", "width": f"{size.width}",
                                                                    "height": f"{size.height}"})
     link = transformed_image['secure_url']
-    return await save_transformed_image(db, link, image_id)
+    return await repository_images.save_transformed_image(db, link, image_id)
 
 
 @router.post("/{image_id}/effect", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
@@ -170,14 +168,14 @@ async def use_effect(image_id: int, e: Effect, db: AsyncSession = Depends(get_db
     :return: The transformed image.
     :rtype: Image
     """
-    image = await get_image_db(db, image_id, current_user)
+    image = await repository_images.get_image_db(db, image_id, current_user)
     if image is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
     public_id = f'PhotoShare(transformed)/{current_user.email}_{random.randint(1, 1000000)}'
     transformed_image = cloudinary.uploader.upload(image.link, public_id=public_id,
                                                    transformation={"effect": f"art:{e.value}"})
     link = transformed_image['secure_url']
-    return await save_transformed_image(db, link, image_id)
+    return await repository_images.save_transformed_image(db, link, image_id)
 
 
 @router.get("/{image_id}/qrcode", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
@@ -195,18 +193,55 @@ async def generate_qrcode(image_id: int, db: AsyncSession = Depends(get_db),
     :return: The generated QR code.
     :rtype: Image
     """
-    image = await get_transformed_image_db(db, image_id)
+    image = await repository_images.get_transformed_image_db(db, image_id)
     if image is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
-    return await generate_qrcode_by_image(image.link)
+    return await repository_images.generate_qrcode_by_image(image.link)
 
 
 @router.get("/search/{image_query}", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
 async def search_images(order_by: SortBy, descending: bool, image_query: str = Path(..., min_length=2),
                         db: AsyncSession = Depends(get_db),
                         current_user: User = Depends(auth_service.get_current_user)):
-    image_by_description = await search_images_by_description_or_tag(image_query, db)
+    """
+    Searches for images with the given query for the authenticated user.
+
+    :param order_by: The order to sort the images by.
+    :type order_by: SortBy
+    :param descending: Whether to sort the images in descending order.
+    :type descending: bool
+    :param image_query: The query to search for images.
+    :type image_query: str
+    :param db: The database session.
+    :type db: AsyncSession
+    :param current_user: The currently authenticated user.
+    :type current_user: User
+    :return: The searched images.
+    :rtype: List[Image]
+    """
+    image_by_description = await repository_images.search_images_by_description_or_tag(image_query, db)
     if len(image_by_description) == 0:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Images with this query not found")
-    sorted_images = await sorter(image_by_description, order_by, descending)
+    sorted_images = await repository_images.sorter(image_by_description, order_by, descending)
     return sorted_images
+
+
+@router.get("/images/{user_id}", response_model=list[ImageResponse])
+async def get_images_by_user_id(user_id: int, db: AsyncSession = Depends(get_db),
+                                current_user: User = Depends(auth_service.get_current_user)):
+    """
+    Gets images by user id. Available for admin and moderator.
+
+    :param user_id: The id of the user.
+    :type user_id: int
+    :param db: The async database session.
+    :type db: AsyncSession
+    :param current_user: The current user.
+    :type current_user: User
+    :return: The list of images.
+    :rtype: list[ImageResponse]
+    """
+    role_access = RoleAccess([Role.admin, Role.moderator])
+    await role_access(request=None, user=current_user)
+    images = await repository_images.get_images_by_user_id(db, user_id)
+    return images

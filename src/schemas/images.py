@@ -1,6 +1,14 @@
 from typing import List
 from pydantic import BaseModel, Field
+from datetime import datetime
 
+
+class ImageResponse(BaseModel):
+    id: int
+    link: str
+    description: str
+    user_id: int
+    created_at: datetime
 
 class ImageSchema(BaseModel):
     description: str = Field(max_length=250)
