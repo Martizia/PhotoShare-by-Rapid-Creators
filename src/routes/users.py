@@ -43,9 +43,9 @@ async def change_avatar(file: UploadFile = File(),
     dependencies=[Depends(RateLimiter(times=10, seconds=60))],
 )
 async def get_user_by_id(
-    user_id: int = Path(ge=1),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(auth_service.get_admin)):
+        user_id: int = Path(ge=1),
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(auth_service.get_admin)):
     user = await repository_users.get_user_by_id(user_id, db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="NOT FOUND")
@@ -58,11 +58,10 @@ async def get_user_by_id(
     dependencies=[Depends(RateLimiter(times=3, seconds=60))],
 )
 async def update_my_name(
-    name: str,
-    user: User = Depends(auth_service.get_current_user),
-    db: AsyncSession = Depends(get_db)
+        name: str,
+        user: User = Depends(auth_service.get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
-
     user = await repository_users.update_my_name(user, name, db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="NOT FOUND")
@@ -76,11 +75,19 @@ async def update_my_name(
     dependencies=[Depends(RateLimiter(times=1, seconds=60))],
 )
 async def delete_user(
-    user_id: int = Path(ge=1),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(auth_service.get_admin)):
+        user_id: int = Path(ge=1),
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(auth_service.get_admin)):
     user = await repository_users.delete_user(user_id, db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="NOT FOUND")
     return user
 
+
+@router.get("/search/{search_query}", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
+async def search_users(search_query: str = Path(..., min_length=1), db: AsyncSession = Depends(get_db),
+                       current_user: User = Depends(auth_service.get_admin)):
+    users_by_query = await repository_users.search_users(search_query, db)
+    if len(users_by_query) == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Users with this query not found")
+    return users_by_query
