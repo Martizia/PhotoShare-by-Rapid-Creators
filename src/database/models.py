@@ -21,6 +21,7 @@ class Image(Base):
     description: Mapped[str] = mapped_column(String(250), nullable=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
     tags = relationship("Tag", secondary="image_tag", back_populates="images")
+    created_at: Mapped[date] = mapped_column("created_at", DateTime, default=func.now(), nullable=True)
 
 
 class Comment(Base):
@@ -113,3 +114,8 @@ class Effect(enum.Enum):
     sonnet: str = "sonnet"
     ukulele: str = "ukulele"
     zorro: str = "zorro"
+
+
+class SortBy(enum.Enum):
+    rating: str = "rating"
+    date: str = "date"
