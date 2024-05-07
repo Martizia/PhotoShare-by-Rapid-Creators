@@ -160,23 +160,6 @@ async def get_transformed_image_db(db: AsyncSession, image_id: int):
     return result_one
 
 
-# async def search_images_by_description_or_tag(search_string: str, db: AsyncSession):
-#     """
-#     Searches images by description or tag.
-#
-#     :param search_string: The string to search for.
-#     :type search_string: str
-#     :param db: The async database session.
-#     :type db: AsyncSession
-#     :return: The list of images that match the search string.
-#     :rtype: list[Image]
-#     """
-#     query = select(Image).join(Image.tags).filter(
-#         or_(Image.description.ilike(f"%{search_string}%"), Tag.name.ilike(f"%{search_string}%"))).distinct()
-#     result = await db.execute(query)
-#     return result.scalars().all()
-
-
 async def search_images_by_description_or_tag(search_string: str, db: AsyncSession):
     """
     Searches images by description or tag and includes the average rating for each image.
@@ -188,18 +171,13 @@ async def search_images_by_description_or_tag(search_string: str, db: AsyncSessi
     :return: The list of images that match the search string with their average ratings.
     :rtype: list[dict]
     """
-    # Alias the Image table to avoid confusion
     ImageAlias = aliased(Image)
-
-    # Subquery to calculate the average rating for each image
     average_rating_subquery = select(
         Rating.image_id,
         func.avg(Rating.rating).label("average_rating")
     ).group_by(
         Rating.image_id
     ).subquery()
-
-    # Main query to search images by description or tag and join with the average rating subquery
     query = select(
         ImageAlias,
         average_rating_subquery.c.average_rating
@@ -214,12 +192,8 @@ async def search_images_by_description_or_tag(search_string: str, db: AsyncSessi
             Tag.name.ilike(f"%{search_string}%")
         )
     ).distinct()
-
-    # Execute the query and fetch the results
     result = await db.execute(query)
     images_with_ratings = result.all()
-
-    # Convert the results to a list of dictionaries
     response = []
     for image, average_rating in images_with_ratings:
         response.append({
