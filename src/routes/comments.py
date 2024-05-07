@@ -1,6 +1,4 @@
-import cloudinary
-import cloudinary.uploader
-from fastapi import APIRouter, Depends, File, UploadFile, Path, status, HTTPException
+from fastapi import APIRouter, Depends, Path, status, HTTPException
 from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 

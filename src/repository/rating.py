@@ -1,10 +1,9 @@
 from fastapi import HTTPException, status
-from sqlalchemy import select, or_, extract, func
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from src.database.models import Rating, User, Image, Role
-from src.schemas.rating import RatingSchema, RatingResponse, RatingAverageResponse
+from src.database.models import Rating, User, Image
+from src.schemas.rating import RatingSchema, RatingAverageResponse
 
 
 async def create_rating(body: RatingSchema, db: AsyncSession, user: User):
@@ -54,14 +53,6 @@ async def check_image_owner(db: AsyncSession, user: User, image_id: int):
     image = result.scalar()
     if image:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="You cannot rate your own image")
-    return True
-
-
-async def check_user_role(db: AsyncSession, user: User):
-    result = await db.execute(select(User).where(User.id == user.id))
-    user_db = result.scalar()
-    if user_db.role == Role.user:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You do not have enough permissions")
     return True
 
 

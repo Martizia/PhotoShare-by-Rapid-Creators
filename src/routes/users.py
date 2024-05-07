@@ -6,10 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config.config import config
 from src.database.db import get_db
-from src.database.models import User
+from src.database.models import User, Role
 from src.repository import users as repository_users
-from src.schemas.users import UserResponse, UserUpdateMyName
+from src.schemas.users import UserResponse, UserProfile
 from src.services.auth import auth_service
+from src.services.roles import RoleAccess
 
 router = APIRouter(prefix='/users', tags=["users"])
 
@@ -19,8 +20,17 @@ cloudinary.config(cloud_name=config.CLOUDINARY_NAME,
                   secure=True)
 
 
-@router.get('/me', response_model=UserResponse, dependencies=[Depends(RateLimiter(times=1, seconds=20))])
-async def get_my_user(my_user: User = Depends(auth_service.get_current_user)):
+@router.get('/me', response_model=UserProfile, dependencies=[Depends(RateLimiter(times=1, seconds=20))])
+async def get_my_user(my_user: User = Depends(auth_service.get_current_user), db: AsyncSession = Depends(get_db)):
+    my_user = UserProfile(
+        id=my_user.id,
+        username=my_user.username,
+        email=my_user.email,
+        avatar=my_user.avatar,
+        role=my_user.role
+    )
+    my_user.uploaded_images = await repository_users.count_user_images(my_user.id, db)
+    my_user.rated_images = await repository_users.count_user_ratings(my_user.id, db)
     return my_user
 
 
@@ -45,7 +55,9 @@ async def change_avatar(file: UploadFile = File(),
 async def get_user_by_id(
         user_id: int = Path(ge=1),
         db: AsyncSession = Depends(get_db),
-        current_user: User = Depends(auth_service.get_admin)):
+        current_user: User = Depends(auth_service.get_current_user)):
+    role_access = RoleAccess([Role.admin])
+    await role_access(request=None, user=current_user)
     user = await repository_users.get_user_by_id(user_id, db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="NOT FOUND")
@@ -83,7 +95,7 @@ async def delete_user(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="NOT FOUND")
     return user
 
-
+  
 @router.get("/search/{search_query}", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
 async def search_users(search_query: str = Path(..., min_length=1), db: AsyncSession = Depends(get_db),
                        current_user: User = Depends(auth_service.get_admin)):
@@ -91,3 +103,4 @@ async def search_users(search_query: str = Path(..., min_length=1), db: AsyncSes
     if len(users_by_query) == 0:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Users with this query not found")
     return users_by_query
+

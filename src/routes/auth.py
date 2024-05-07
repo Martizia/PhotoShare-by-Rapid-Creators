@@ -1,5 +1,5 @@
 from fastapi import (APIRouter, BackgroundTasks, Depends, HTTPException,
-                     Request, Response, status)
+                     Request, status)
 
 from fastapi.security import (HTTPAuthorizationCredentials, HTTPBearer,
                               OAuth2PasswordRequestForm)
@@ -8,9 +8,8 @@ from sqlalchemy import select
 from src.database.db import get_db
 from src.database.models import Role, User
 from src.repository import users as repository_users
-from src.schemas.schemas import PasswordResetRequest, PasswordReset
 from src.services.roles import RoleAccess
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from src.schemas.users import RequestEmail, TokenModel, UserModel, UserResponse, PasswordResetRequest, PasswordReset
 from src.services.auth import auth_service, add_blacklist_token
 from src.services.email import send_email, send_password_reset_email
@@ -62,7 +61,7 @@ def logout(token: str = Depends(auth_service.get_current_user_token)):
 
 @router.get('/refresh_token', response_model=TokenModel)
 async def refresh_token(credentials: HTTPAuthorizationCredentials = Depends(get_refresh_token),
-                        db: AsyncSession = Depends(get_db)):
+                        db: AsyncSession = Depends(get_db), current_user: User = Depends(auth_service.get_current_user)):
     token = credentials.credentials
     email = await auth_service.decode_refresh_token(token)
     user = await repository_users.get_user_by_email(email, db)

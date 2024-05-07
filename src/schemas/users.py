@@ -1,7 +1,6 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from typing import Optional
 
-from sqlalchemy import DateTime, func
-from datetime import datetime
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 from src.database.models import Role
 
@@ -19,6 +18,16 @@ class UserResponse(BaseModel):
     avatar: str
     role: Role
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserProfile(BaseModel):
+    id: int
+    username: str
+    email: EmailStr
+    avatar: str
+    role: Role
+    uploaded_images: Optional[int] = None
+    rated_images: Optional[int] = None
 
 
 class UserUpdateMyName(BaseModel):
