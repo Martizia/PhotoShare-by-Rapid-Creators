@@ -51,20 +51,18 @@ async def update_comment(
     return comment
 
 
-async def delete_comment(comment_id: int, db: AsyncSession, current_user: User):
+async def delete_comment(comment_id: int, db: AsyncSession):
     """
-    Removes a single comment with the specified ID for a specific user.
+    Removes a single comment with the specified ID.
 
     :param comment_id: The ID of the comment to remove.
     :type comment_id: int
     :param db: The async database session.
     :type db: AsyncSession
-    :param current_user: The user to remove the comment for.
-    :type current_user: User
     :return: The removed comment, or None if it does not exist.
     :rtype: Comment | None
     """
-    stmt = select(Comment).filter_by(id=comment_id, user_id=current_user.id)
+    stmt = select(Comment).filter_by(id=comment_id)
     comment = await db.execute(stmt)
     comment = comment.scalar_one_or_none()
     if comment:

@@ -22,6 +22,16 @@ cloudinary.config(cloud_name=config.CLOUDINARY_NAME,
 
 @router.get('/me', response_model=UserProfile, dependencies=[Depends(RateLimiter(times=1, seconds=20))])
 async def get_my_user(my_user: User = Depends(auth_service.get_current_user), db: AsyncSession = Depends(get_db)):
+    """
+    Returns the profile of the currently authenticated user.
+
+    :param my_user: The currently authenticated user.
+    :type my_user: User
+    :param db: The async database session.
+    :type db: AsyncSession
+    :return: The profile of the currently authenticated user.
+    :rtype: UserProfile
+    """
     my_user = UserProfile(
         id=my_user.id,
         username=my_user.username,
@@ -38,6 +48,18 @@ async def get_my_user(my_user: User = Depends(auth_service.get_current_user), db
 async def change_avatar(file: UploadFile = File(),
                         user: User = Depends(auth_service.get_current_user),
                         db: AsyncSession = Depends(get_db)):
+    """
+    Changes the avatar of the currently authenticated user.
+
+    :param file: The file to upload.
+    :type file: UploadFile
+    :param user: The currently authenticated user.
+    :type user: User
+    :param db: The async database session.
+    :type db: AsyncSession
+    :return: The updated user.
+    :rtype: User
+    """
     public_id = f"Application/{user.email}"
     image = cloudinary.uploader.upload(file.file, public_id=public_id, overwrite=True)
     image_url = cloudinary.CloudinaryImage(public_id).build_url(width=250, height=250, crop='fill',
@@ -56,6 +78,18 @@ async def get_user_by_id(
         user_id: int = Path(ge=1),
         db: AsyncSession = Depends(get_db),
         current_user: User = Depends(auth_service.get_current_user)):
+    """
+    Returns the user with the given ID. Available only for admin.
+
+    :param user_id: The ID of the user to retrieve.
+    :type user_id: int
+    :param db: The async database session.
+    :type db: AsyncSession
+    :param current_user: The currently authenticated user.
+    :type current_user: User
+    :return: The user with the given ID.
+    :rtype: User
+    """
     role_access = RoleAccess([Role.admin])
     await role_access(request=None, user=current_user)
     user = await repository_users.get_user_by_id(user_id, db)
@@ -74,6 +108,18 @@ async def update_my_name(
         user: User = Depends(auth_service.get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
+    """
+    Updates the name of the currently authenticated user.
+
+    :param name: The new name of the user.
+    :type name: str
+    :param user: The currently authenticated user.
+    :type user: User
+    :param db: The async database session.
+    :type db: AsyncSession
+    :return: The updated user.
+    :rtype: User
+    """
     user = await repository_users.update_my_name(user, name, db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="NOT FOUND")
@@ -89,7 +135,21 @@ async def update_my_name(
 async def delete_user(
         user_id: int = Path(ge=1),
         db: AsyncSession = Depends(get_db),
-        current_user: User = Depends(auth_service.get_admin)):
+        current_user: User = Depends(auth_service.get_current_user)):
+    """
+    Deletes the user with the given ID. Available only for admin.
+
+    :param user_id: The ID of the user to delete.
+    :type user_id: int
+    :param db: The async database session.
+    :type db: AsyncSession
+    :param current_user: The currently authenticated user.
+    :type current_user: User
+    :return: The deleted user.
+    :rtype: User
+    """
+    role_access = RoleAccess([Role.admin])
+    await role_access(request=None, user=current_user)
     user = await repository_users.delete_user(user_id, db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="NOT FOUND")

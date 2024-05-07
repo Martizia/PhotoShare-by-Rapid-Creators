@@ -36,12 +36,18 @@ app.include_router(images.router, prefix='/api')
 app.include_router(comments.router, prefix='/api')
 app.include_router(rating.router, prefix='/api')
 
-BASE_DIR = Path(".")
 
 app.mount("/static", StaticFiles(directory="src/services/static"), name="static")
 
+
 @app.on_event("startup")
 async def startup():
+    """
+    This function initializes the Redis cache and FastAPI limiter.
+
+    :return: None
+    :rtype: None
+    """
     r = await redis.Redis(host=config.REDIS_DOMAIN, port=config.REDIS_PORT, db=0,
                           password=config.REDIS_PASSWORD, encoding="utf-8",
                           decode_responses=True)
@@ -50,6 +56,12 @@ async def startup():
 
 @app.get("/", response_class=HTMLResponse)
 def read_root():
+    """
+    This function serves the index.html file.
+
+    :return: An HTML response containing the index.html file.
+    :rtype: HTMLResponse
+    """
     index_html_path = os.path.join("src", "services", "templates", "index.html")
     return FileResponse(index_html_path)
 

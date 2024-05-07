@@ -34,7 +34,6 @@ async def create_comment(
     :type db: AsyncSession
     :param current_user: The currently authenticated user.
     :type current_user: User
-
     :return: The newly created comment.
     :rtype: Comment
     """
@@ -93,7 +92,7 @@ async def delete_comment(
     current_user: User = Depends(auth_service.get_current_user),
 ):
     """
-    Deletes a specific comment by its ID for the authenticated user.
+    Deletes a specific comment by its ID. Only admins and moderators can delete comments.
 
     :param comment_id: The ID of the comment to delete. Must be greater than or equal to 1.
     :type comment_id: int
@@ -107,5 +106,5 @@ async def delete_comment(
     """
     role_access = RoleAccess([Role.admin, Role.moderator])
     await role_access(request=None, user=current_user)
-    comment = await repository_comments.delete_comment(comment_id, db, current_user)
+    comment = await repository_comments.delete_comment(comment_id, db)
     return comment
