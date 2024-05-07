@@ -160,6 +160,16 @@ async def get_transformed_image_db(db: AsyncSession, image_id: int):
 
 
 async def search_images_by_description_or_tag(search_string: str, db: AsyncSession):
+    """
+    Searches images by description or tag.
+
+    :param search_string: The string to search for.
+    :type search_string: str
+    :param db: The async database session.
+    :type db: AsyncSession
+    :return: The list of images that match the search string.
+    :rtype: list[Image]
+    """
     query = select(Image).join(Image.tags).filter(
         or_(Image.description.ilike(f"%{search_string}%"), Tag.name.ilike(f"%{search_string}%"))).distinct()
     result = await db.execute(query)
@@ -167,6 +177,18 @@ async def search_images_by_description_or_tag(search_string: str, db: AsyncSessi
 
 
 async def sorter(images: list, order_by: SortBy, descending: bool):
+    """
+    Sorts images by rating or date.
+
+    :param images: The list of images to sort.
+    :type images: list
+    :param order_by: The order to sort by.
+    :type order_by: SortBy
+    :param descending: Whether to sort in descending order.
+    :type descending: bool
+    :return: The sorted list of images.
+    :rtype: list
+    """
     if order_by.value == 'rating':
         images.sort(key=lambda x: getattr(x, 'average_rating', 0), reverse=descending)  #не працює
     elif order_by.value == 'date':

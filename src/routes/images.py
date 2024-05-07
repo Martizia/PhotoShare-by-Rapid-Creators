@@ -205,6 +205,22 @@ async def generate_qrcode(image_id: int, db: AsyncSession = Depends(get_db),
 async def search_images(order_by: SortBy, descending: bool, image_query: str = Path(..., min_length=2),
                         db: AsyncSession = Depends(get_db),
                         current_user: User = Depends(auth_service.get_current_user)):
+    """
+    Searches for images with the given query for the authenticated user.
+
+    :param order_by: The order to sort the images by.
+    :type order_by: SortBy
+    :param descending: Whether to sort the images in descending order.
+    :type descending: bool
+    :param image_query: The query to search for images.
+    :type image_query: str
+    :param db: The database session.
+    :type db: AsyncSession
+    :param current_user: The currently authenticated user.
+    :type current_user: User
+    :return: The searched images.
+    :rtype: List[Image]
+    """
     image_by_description = await search_images_by_description_or_tag(image_query, db)
     if len(image_by_description) == 0:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Images with this query not found")
