@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends, UploadFile, File, status, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, status, HTTPException, Path
 from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 import cloudinary.uploader
 import random
 
 from src.database.db import get_db
-from src.database.models import User, Role, Effect, Crop
+from src.database.models import User, Role, Effect, Crop, SortBy
 from src.repository.images import create_image, delete_image_db, update_description_db, get_image_db, \
-    save_transformed_image, generate_qrcode_by_image, get_transformed_image_db
+    save_transformed_image, generate_qrcode_by_image, get_transformed_image_db, search_images_by_description_or_tag, \
+    sorter
 from src.config.config import config
 from src.schemas.images import ImageSchema, UpdateDescriptionSchema, UpdateImageSchema
 from src.services.auth import auth_service
@@ -104,3 +105,14 @@ async def generate_qrcode(image_id: int, db: AsyncSession = Depends(get_db),
     if image is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
     return await generate_qrcode_by_image(image.link)
+
+
+@router.get("/search/{image_query}", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
+async def search_images(order_by: SortBy, descending: bool, image_query: str = Path(..., min_length=2),
+                        db: AsyncSession = Depends(get_db),
+                        current_user: User = Depends(auth_service.get_current_user)):
+    image_by_description = await search_images_by_description_or_tag(image_query, db)
+    if len(image_by_description) == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Images with this query not found")
+    sorted_images = await sorter(image_by_description, order_by, descending)
+    return sorted_images

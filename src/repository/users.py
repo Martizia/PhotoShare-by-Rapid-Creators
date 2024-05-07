@@ -2,6 +2,7 @@ from fastapi import Depends
 from libgravatar import Gravatar
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.expression import or_
 
 from src.database.db import get_db
 from src.database.models import User, Image, Rating
@@ -119,3 +120,13 @@ async def delete_user(user_id: int, db: AsyncSession):
         await db.commit()
     return f'{user.username} deleted'
 
+
+async def search_users(search_string: str, db: AsyncSession):
+    query = select(User).filter(
+        or_(
+            User.username.ilike(f"%{search_string}%"),
+            User.email.ilike(f"%{search_string}%")
+        )
+    ).distinct()
+    result = await db.execute(query)
+    return result.scalars().all()

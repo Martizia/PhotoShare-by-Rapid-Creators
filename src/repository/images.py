@@ -3,9 +3,11 @@ from io import BytesIO
 import qrcode
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.sql.expression import or_
 from starlette.responses import StreamingResponse
+from operator import attrgetter
 
-from src.database.models import Image, User, TransformedImage
+from src.database.models import Image, User, TransformedImage, Tag, SortBy
 from src.schemas.images import ImageSchema, UpdateDescriptionSchema
 from src.services.tags import get_tags_list
 
@@ -73,3 +75,18 @@ async def get_transformed_image_db(db: AsyncSession, image_id: int):
     result = await db.execute(query)
     result_one = result.scalar_one_or_none()
     return result_one
+
+
+async def search_images_by_description_or_tag(search_string: str, db: AsyncSession):
+    query = select(Image).join(Image.tags).filter(
+        or_(Image.description.ilike(f"%{search_string}%"), Tag.name.ilike(f"%{search_string}%"))).distinct()
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
+async def sorter(images: list, order_by: SortBy, descending: bool):
+    if order_by.value == 'rating':
+        images.sort(key=lambda x: getattr(x, 'average_rating', 0), reverse=descending)  #не працює
+    elif order_by.value == 'date':
+        images.sort(key=attrgetter('created_at'), reverse=descending)
+    return images
