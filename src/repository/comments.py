@@ -68,4 +68,4 @@ async def delete_comment(comment_id: int, db: AsyncSession):
     if comment:
         await db.delete(comment)
         await db.commit()
-    return comment
+    return {'message': 'Comment deleted'}

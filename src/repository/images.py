@@ -8,7 +8,7 @@ from sqlalchemy.sql.expression import or_
 from starlette.responses import StreamingResponse
 from operator import attrgetter
 
-from src.database.models import Image, User, TransformedImage, Tag, SortBy, Rating
+from src.database.models import Image, User, TransformedImage, Tag, SortBy, Rating, Role
 from src.schemas.images import ImageSchema, UpdateDescriptionSchema
 from src.services.tags import get_tags_list
 
@@ -55,6 +55,12 @@ async def delete_image_db(db: AsyncSession, image_id: int, user: User) -> Image:
     result = await db.execute(query)
     image = result.scalar_one_or_none()
     if image:
+        await db.delete(image)
+        await db.commit()
+    if user.role == Role.admin:
+        query = select(Image).filter_by(id=image_id)
+        result = await db.execute(query)
+        image = result.scalar_one_or_none()
         await db.delete(image)
         await db.commit()
     return image
@@ -182,10 +188,10 @@ async def search_images_by_description_or_tag(search_string: str, db: AsyncSessi
         ImageAlias,
         average_rating_subquery.c.average_rating
     ).join(
-        ImageAlias.tags
+        ImageAlias.tags, isouter=True
     ).join(
         average_rating_subquery,
-        ImageAlias.id == average_rating_subquery.c.image_id
+        ImageAlias.id == average_rating_subquery.c.image_id, isouter=True
     ).where(
         or_(
             ImageAlias.description.ilike(f"%{search_string}%"),
@@ -202,7 +208,7 @@ async def search_images_by_description_or_tag(search_string: str, db: AsyncSessi
             "user_id": image.user_id,
             "description": image.description,
             "created_at": image.created_at,
-            "average_rating": average_rating
+            "average_rating": average_rating if average_rating is not None else 0
         })
 
     return response
