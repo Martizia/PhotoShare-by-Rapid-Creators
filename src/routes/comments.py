@@ -10,7 +10,7 @@ from src.services.auth import auth_service
 from src.repository.rating import get_image
 from src.services.roles import RoleAccess
 
-router = APIRouter(prefix='/comments', tags=["comments"])
+router = APIRouter(prefix='/comments', tags=["Comments"])
 
 
 @router.post(
@@ -82,7 +82,6 @@ async def update_comment(
 
 @router.delete(
     "/{comment_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
     description="No more than 1 request per minute",
     dependencies=[Depends(RateLimiter(times=1, seconds=60))],
 )

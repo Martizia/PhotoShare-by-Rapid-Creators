@@ -21,7 +21,7 @@ cloudinary.config(
 
 router = APIRouter(
     prefix="/images",
-    tags=["images"],
+    tags=["Images"],
 )
 access_to_route_all = RoleAccess([Role.admin])
 
@@ -54,7 +54,7 @@ async def upload_image(file: UploadFile = File(...), body: ImageSchema = Depends
     return await repository_images.create_image(db, link, body, current_user)
 
 
-@router.delete("/{image_id}", status_code=status.HTTP_204_NO_CONTENT,
+@router.delete("/{image_id}",
                dependencies=[Depends(RateLimiter(times=1, seconds=10))])
 async def delete_image(image_id: int, db: AsyncSession = Depends(get_db),
                        current_user: User = Depends(auth_service.get_current_user)):

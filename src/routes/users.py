@@ -12,7 +12,7 @@ from src.schemas.users import UserResponse, UserProfile
 from src.services.auth import auth_service
 from src.services.roles import RoleAccess
 
-router = APIRouter(prefix='/users', tags=["users"])
+router = APIRouter(prefix='/users', tags=["Users"])
 
 cloudinary.config(cloud_name=config.CLOUDINARY_NAME,
                   api_key=config.CLOUDINARY_API_KEY,
@@ -45,7 +45,7 @@ async def get_my_user(my_user: User = Depends(auth_service.get_current_user), db
 
 
 @router.patch('/avatar', response_model=UserResponse, dependencies=[Depends(RateLimiter(times=1, seconds=20))])
-async def change_avatar(file: UploadFile = File(),
+async def change_avatar(file: UploadFile = File(...),
                         user: User = Depends(auth_service.get_current_user),
                         db: AsyncSession = Depends(get_db)):
     """
@@ -60,8 +60,15 @@ async def change_avatar(file: UploadFile = File(),
     :return: The updated user.
     :rtype: User
     """
+    max_size = 3 * 1024 * 1024  # 3MB in bytes
+    file_content = await file.read()
+    file_size = len(file_content)
+    if file_size == 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File is empty")
+    if file_size > max_size:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File size exceeds 3MB")
     public_id = f"Application/{user.email}"
-    image = cloudinary.uploader.upload(file.file, public_id=public_id, overwrite=True)
+    image = cloudinary.uploader.upload(file_content, public_id=public_id, overwrite=True)
     image_url = cloudinary.CloudinaryImage(public_id).build_url(width=250, height=250, crop='fill',
                                                                 version=image.get('version'))
     user = await repository_users.update_avatar_url(user.email, image_url, db)
