@@ -8,7 +8,7 @@ from src.schemas.rating import RatingResponse, RatingSchema, RatingAverageRespon
 from src.services.auth import auth_service
 from src.services.roles import RoleAccess
 
-router = APIRouter(prefix="/rating", tags=["rating"])
+router = APIRouter(prefix="/rating", tags=["Rating"])
 
 
 @router.post("/", response_model=RatingResponse, status_code=status.HTTP_201_CREATED)

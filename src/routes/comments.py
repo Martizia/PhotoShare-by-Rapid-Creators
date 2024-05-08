@@ -10,7 +10,7 @@ from src.services.auth import auth_service
 from src.repository.rating import get_image
 from src.services.roles import RoleAccess
 
-router = APIRouter(prefix='/comments', tags=["comments"])
+router = APIRouter(prefix='/comments', tags=["Comments"])
 
 
 @router.post(

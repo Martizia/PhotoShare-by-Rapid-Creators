@@ -21,7 +21,7 @@ cloudinary.config(
 
 router = APIRouter(
     prefix="/images",
-    tags=["images"],
+    tags=["Images"],
 )
 access_to_route_all = RoleAccess([Role.admin])
 
