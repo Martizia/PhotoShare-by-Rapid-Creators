@@ -3,7 +3,7 @@ from io import BytesIO
 import qrcode
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, selectinload
 from sqlalchemy.sql.expression import or_
 from starlette.responses import StreamingResponse
 from operator import attrgetter
@@ -198,15 +198,17 @@ async def search_images_by_description_or_tag(search_string: str, db: AsyncSessi
             Tag.name.ilike(f"%{search_string}%")
         )
     ).distinct()
-    result = await db.execute(query)
+    result = await db.execute(query.options(selectinload(ImageAlias.tags)))
     images_with_ratings = result.all()
     response = []
     for image, average_rating in images_with_ratings:
+        tag_names = [tag.name for tag in image.tags]
         response.append({
             "link": image.link,
             "id": image.id,
             "user_id": image.user_id,
             "description": image.description,
+            "tags": ', '.join(tag_names),
             "created_at": image.created_at,
             "average_rating": average_rating if average_rating is not None else 0
         })

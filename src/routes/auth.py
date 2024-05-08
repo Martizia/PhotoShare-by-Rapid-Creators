@@ -3,6 +3,7 @@ from fastapi import (APIRouter, BackgroundTasks, Depends, HTTPException,
 
 from fastapi.security import (HTTPAuthorizationCredentials, HTTPBearer,
                               OAuth2PasswordRequestForm)
+from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.database.db import get_db
@@ -144,7 +145,8 @@ async def confirmed_email(token: str,
     return {"message": "Email confirmed"}
 
 
-@router.post('/request_email')
+@router.post('/request_email', dependencies=[Depends(RateLimiter(times=1, seconds=10))],
+             description="No more than 1 request per 10 second")
 async def request_email(body: RequestEmail, background_tasks: BackgroundTasks, request: Request,
                         db: AsyncSession = Depends(get_db)):
     """
@@ -172,7 +174,8 @@ async def request_email(body: RequestEmail, background_tasks: BackgroundTasks, r
         return {"message": "User with this email does not exist."}
 
 
-@router.post("/forgot_password")
+@router.post("/forgot_password", dependencies=[Depends(RateLimiter(times=1, seconds=10))],
+             description="No more than 1 request per 10 second")
 async def forgot_password(body: PasswordResetRequest, request: Request, db: AsyncSession = Depends(get_db)):
     """
     Sends password reset link to user's email address

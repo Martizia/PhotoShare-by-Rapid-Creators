@@ -18,9 +18,9 @@ class Settings(BaseSettings):
     MAIL_FROM: EmailStr
     MAIL_PORT: int
     MAIL_SERVER: str
-    REDIS_DOMAIN: str = "localhost"
-    REDIS_PORT: int = 6379
-    REDIS_PASSWORD: str | None = None
+    REDIS_DOMAIN: str
+    REDIS_PORT: int
+    REDIS_PASSWORD: str | None
     CLOUDINARY_NAME: str
     CLOUDINARY_API_KEY: int
     CLOUDINARY_API_SECRET: str

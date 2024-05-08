@@ -20,7 +20,8 @@ cloudinary.config(cloud_name=config.CLOUDINARY_NAME,
                   secure=True)
 
 
-@router.get('/me', response_model=UserProfile, dependencies=[Depends(RateLimiter(times=1, seconds=10))])
+@router.get('/me', response_model=UserProfile, dependencies=[Depends(RateLimiter(times=1, seconds=10))],
+            description="No more than 1 request per 10 seconds")
 async def get_my_user(my_user: User = Depends(auth_service.get_current_user), db: AsyncSession = Depends(get_db)):
     """
     Returns the profile of the currently authenticated user.
@@ -44,7 +45,8 @@ async def get_my_user(my_user: User = Depends(auth_service.get_current_user), db
     return my_user
 
 
-@router.patch('/avatar', response_model=UserResponse, dependencies=[Depends(RateLimiter(times=1, seconds=20))])
+@router.patch('/avatar', response_model=UserResponse, dependencies=[Depends(RateLimiter(times=1, seconds=20))],
+              description="No more than 1 request per 20 seconds")
 async def change_avatar(file: UploadFile = File(...),
                         user: User = Depends(auth_service.get_current_user),
                         db: AsyncSession = Depends(get_db)):
@@ -79,7 +81,7 @@ async def change_avatar(file: UploadFile = File(...),
     "/{user_id}",
     response_model=UserResponse,
     description="No more than 10 requests per minute",
-    dependencies=[Depends(RateLimiter(times=10, seconds=60))],
+    dependencies=[Depends(RateLimiter(times=10, seconds=60))]
 )
 async def get_user_by_id(
         user_id: int = Path(ge=1),
@@ -162,8 +164,9 @@ async def delete_user(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="NOT FOUND")
     return user
 
-  
-@router.get("/search/{search_query}", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
+
+@router.get("/search/{search_query}", dependencies=[Depends(RateLimiter(times=1, seconds=10))],
+            description="No more than 1 request per 10 seconds")
 async def search_users(search_query: str = Path(..., min_length=1), db: AsyncSession = Depends(get_db),
                        current_user: User = Depends(auth_service.get_current_user)):
     """
@@ -182,4 +185,3 @@ async def search_users(search_query: str = Path(..., min_length=1), db: AsyncSes
     if len(users_by_query) == 0:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Users with this query not found")
     return users_by_query
-

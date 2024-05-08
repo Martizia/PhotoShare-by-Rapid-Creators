@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from fastapi_limiter.depends import RateLimiter
 from src.database.db import get_db
 from src.database.models import User, Role
 from src.repository import rating as repository_rating
@@ -11,7 +11,9 @@ from src.services.roles import RoleAccess
 router = APIRouter(prefix="/rating", tags=["Rating"])
 
 
-@router.post("/", response_model=RatingResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=RatingResponse, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(RateLimiter(times=5, seconds=30))],
+             description="No more than 5 requests per 30 seconds")
 async def create_rating(body: RatingSchema, db: AsyncSession = Depends(get_db),
                         current_user: User = Depends(auth_service.get_current_user),
                         ):
@@ -34,7 +36,9 @@ async def create_rating(body: RatingSchema, db: AsyncSession = Depends(get_db),
     return rating
 
 
-@router.get("/average/{image_id}", response_model=RatingAverageResponse)
+@router.get("/average/{image_id}", response_model=RatingAverageResponse,
+            dependencies=[Depends(RateLimiter(times=5, seconds=30))],
+            description="No more than 5 requests per 30 seconds")
 async def get_average_rating(image_id: int, db: AsyncSession = Depends(get_db),
                              current_user: User = Depends(auth_service.get_current_user)):
     """
@@ -53,7 +57,9 @@ async def get_average_rating(image_id: int, db: AsyncSession = Depends(get_db),
     return rating
 
 
-@router.get("/{image_id}", response_model=list[RatingResponse])
+@router.get("/{image_id}", response_model=list[RatingResponse],
+            dependencies=[Depends(RateLimiter(times=5, seconds=30))],
+            description="No more than 5 requests per 30 seconds")
 async def get_image_ratings(image_id: int, db: AsyncSession = Depends(get_db),
                             current_user: User = Depends(auth_service.get_current_user)):
     """

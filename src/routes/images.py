@@ -26,7 +26,8 @@ router = APIRouter(
 access_to_route_all = RoleAccess([Role.admin])
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, dependencies=[Depends(RateLimiter(times=1, seconds=10))])
+@router.post("/", status_code=status.HTTP_201_CREATED, dependencies=[Depends(RateLimiter(times=1, seconds=10))],
+             description="No more than 5MB file size and 1 request per 10 seconds")
 async def upload_image(file: UploadFile = File(...), body: ImageSchema = Depends(ImageSchema),
                        db: AsyncSession = Depends(get_db), current_user: User = Depends(auth_service.get_current_user)):
     """
@@ -55,7 +56,8 @@ async def upload_image(file: UploadFile = File(...), body: ImageSchema = Depends
 
 
 @router.delete("/{image_id}",
-               dependencies=[Depends(RateLimiter(times=1, seconds=10))])
+               dependencies=[Depends(RateLimiter(times=1, seconds=10))],
+               description="No more than 1 request per 10 seconds")
 async def delete_image(image_id: int, db: AsyncSession = Depends(get_db),
                        current_user: User = Depends(auth_service.get_current_user)):
     """
@@ -76,7 +78,8 @@ async def delete_image(image_id: int, db: AsyncSession = Depends(get_db),
     return {"message": "Image deleted"}
 
 
-@router.put("/{image_id}", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
+@router.put("/{image_id}", dependencies=[Depends(RateLimiter(times=1, seconds=10))],
+            description="No more than 1 request per 10 seconds")
 async def update_description(image_id: int, body: UpdateDescriptionSchema, db: AsyncSession = Depends(get_db),
                              current_user: User = Depends(auth_service.get_current_user)):
     """
@@ -99,7 +102,8 @@ async def update_description(image_id: int, body: UpdateDescriptionSchema, db: A
     return description
 
 
-@router.get("/{image_id}", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
+@router.get("/{image_id}", dependencies=[Depends(RateLimiter(times=2, seconds=10))],
+            description="No more than 2 requests per 10 seconds")
 async def get_image(image_id: int, db: AsyncSession = Depends(get_db),
                     current_user: User = Depends(auth_service.get_current_user)):
     """
@@ -120,7 +124,8 @@ async def get_image(image_id: int, db: AsyncSession = Depends(get_db),
     return image
 
 
-@router.post("/{image_id}/crop", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
+@router.post("/{image_id}/crop", dependencies=[Depends(RateLimiter(times=2, seconds=15))],
+             description="No more than 2 requests per 15 seconds")
 async def crop_image(image_id: int, size: UpdateImageSchema, crop: Crop, db: AsyncSession = Depends(get_db),
                      current_user: User = Depends(auth_service.get_current_user)):
     """
@@ -151,7 +156,8 @@ async def crop_image(image_id: int, size: UpdateImageSchema, crop: Crop, db: Asy
     return await repository_images.save_transformed_image(db, link, image_id)
 
 
-@router.post("/{image_id}/effect", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
+@router.post("/{image_id}/effect", dependencies=[Depends(RateLimiter(times=2, seconds=15))],
+             description="No more than 2 requests per 15 seconds")
 async def use_effect(image_id: int, e: Effect, db: AsyncSession = Depends(get_db),
                      current_user: User = Depends(auth_service.get_current_user)):
     """
@@ -178,7 +184,8 @@ async def use_effect(image_id: int, e: Effect, db: AsyncSession = Depends(get_db
     return await repository_images.save_transformed_image(db, link, image_id)
 
 
-@router.get("/{image_id}/qrcode", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
+@router.get("/{image_id}/qrcode", dependencies=[Depends(RateLimiter(times=1, seconds=10))],
+            description="No more than 1 request per 10 seconds")
 async def generate_qrcode(image_id: int, db: AsyncSession = Depends(get_db),
                           current_user: User = Depends(auth_service.get_current_user)):
     """
@@ -199,7 +206,8 @@ async def generate_qrcode(image_id: int, db: AsyncSession = Depends(get_db),
     return await repository_images.generate_qrcode_by_image(image.link)
 
 
-@router.get("/search/{image_query}", dependencies=[Depends(RateLimiter(times=1, seconds=10))])
+@router.get("/search/{image_query}", dependencies=[Depends(RateLimiter(times=2, seconds=15))],
+            description="No more than 2 requests per 15 seconds")
 async def search_images(order_by: SortBy, descending: bool, image_query: str = Path(..., min_length=2),
                         db: AsyncSession = Depends(get_db),
                         current_user: User = Depends(auth_service.get_current_user)):
