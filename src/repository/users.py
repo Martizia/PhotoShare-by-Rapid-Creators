@@ -243,7 +243,7 @@ async def update_my_name(
     return user
 
 
-async def delete_user(user_id: int, db: AsyncSession) -> dict:
+async def delete_user(user_id: int, db: AsyncSession):
     """
     Deletes a user.
 
@@ -251,8 +251,8 @@ async def delete_user(user_id: int, db: AsyncSession) -> dict:
     :type user_id: int
     :param db: The async database session
     :type db: AsyncSession
-    :return: A dictionary with a message
-    :rtype: dict
+    :return: The deleted user
+    :rtype: User | None
     """
     stmt = select(User).filter_by(id=user_id)
     user = await db.execute(stmt)
@@ -260,7 +260,7 @@ async def delete_user(user_id: int, db: AsyncSession) -> dict:
     if user:
         await db.delete(user)
         await db.commit()
-    return {"message": "User deleted"}
+    return user
 
 
 async def search_users(search_string: str, db: AsyncSession):

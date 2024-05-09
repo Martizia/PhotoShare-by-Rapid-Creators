@@ -138,8 +138,8 @@ async def update_my_name(
 @router.delete(
     "/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    description="No more than 1 request per minute",
-    dependencies=[Depends(RateLimiter(times=1, seconds=60))],
+    description="No more than 1 request per 30 seconds",
+    dependencies=[Depends(RateLimiter(times=1, seconds=30))],
 )
 async def delete_user(
         user_id: int = Path(ge=1),
@@ -162,7 +162,7 @@ async def delete_user(
     user = await repository_users.delete_user(user_id, db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="NOT FOUND")
-    return user
+    return {"message": "User deleted"}
 
 
 @router.get("/search/{search_query}", dependencies=[Depends(RateLimiter(times=1, seconds=10))],

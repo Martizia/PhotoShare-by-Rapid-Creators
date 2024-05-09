@@ -82,8 +82,8 @@ async def update_comment(
 
 @router.delete(
     "/{comment_id}",
-    description="No more than 1 request per minute",
-    dependencies=[Depends(RateLimiter(times=1, seconds=60))],
+    description="No more than 1 request per 30 seconds",
+    dependencies=[Depends(RateLimiter(times=1, seconds=30))],
 )
 async def delete_comment(
     comment_id: int = Path(ge=1),

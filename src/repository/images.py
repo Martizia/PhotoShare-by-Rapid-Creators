@@ -61,8 +61,9 @@ async def delete_image_db(db: AsyncSession, image_id: int, user: User) -> Image:
         query = select(Image).filter_by(id=image_id)
         result = await db.execute(query)
         image = result.scalar_one_or_none()
-        await db.delete(image)
-        await db.commit()
+        if image:
+            await db.delete(image)
+            await db.commit()
     return image
 
 

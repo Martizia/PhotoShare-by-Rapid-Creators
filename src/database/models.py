@@ -19,9 +19,12 @@ class Image(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     link: Mapped[str] = mapped_column(String(150), index=True)
     description: Mapped[str] = mapped_column(String(250), nullable=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     tags = relationship("Tag", secondary="image_tag", back_populates="images")
     created_at: Mapped[date] = mapped_column("created_at", DateTime, default=func.now(), nullable=True)
+    ratings = relationship("Rating", back_populates="image", cascade="all, delete")
+    comments = relationship("Comment", back_populates="imagecom", cascade="all, delete")
+    user = relationship("User", back_populates="imageuser")
 
 
 class Comment(Base):
@@ -36,6 +39,8 @@ class Comment(Base):
     updated_at: Mapped[date] = mapped_column(
         "updated_at", DateTime, default=func.now(), onupdate=func.now(), nullable=True
     )
+    imagecom = relationship("Image", back_populates="comments")
+    user = relationship("User", back_populates="commentuser")
 
 
 class Tag(Base):
@@ -67,18 +72,21 @@ class User(Base):
     confirmed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
     banned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
     reset_token: Mapped[str] = mapped_column(String, nullable=True)
+    imageuser = relationship("Image", back_populates="user", cascade="all, delete-orphan")
+    commentuser = relationship("Comment", back_populates="user", cascade="all, delete-orphan")
 
 
 class Rating(Base):
     __tablename__ = "ratings"
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
     user: Mapped["User"] = relationship("User", backref="ratings", lazy="joined")
     image_id: Mapped[int] = mapped_column(Integer, ForeignKey("images.id"), nullable=False)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[date] = mapped_column(
         "created_at", DateTime, default=func.now(), nullable=False
     )
+    image = relationship("Image", back_populates="ratings")
 
 
 class TransformedImage(Base):
