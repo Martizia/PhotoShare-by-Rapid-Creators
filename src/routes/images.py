@@ -8,7 +8,7 @@ from src.database.db import get_db
 from src.database.models import User, Role, Effect, Crop, SortBy
 from src.repository import images as repository_images
 from src.config.config import config
-from src.schemas.images import ImageSchema, UpdateDescriptionSchema, UpdateImageSchema, ImageResponse
+from src.schemas.images import ImageSchema, UpdateDescriptionSchema, UpdateImageSchema
 from src.services.auth import auth_service
 from src.services.roles import RoleAccess
 
@@ -72,7 +72,7 @@ async def delete_image(image_id: int, db: AsyncSession = Depends(get_db),
     :return: A message indicating that the image was deleted.
     :rtype: dict
     """
-    deleted = await repository_images.delete_image_db(db, image_id, current_user)
+    deleted = await repository_images.delete_image_user(db, image_id, current_user)
     if deleted is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
     return {"message": "Image deleted"}
@@ -234,22 +234,4 @@ async def search_images(order_by: SortBy, descending: bool, image_query: str = P
     return sorted_images
 
 
-@router.get("/images/{user_id}", response_model=list[ImageResponse])
-async def get_images_by_user_id(user_id: int, db: AsyncSession = Depends(get_db),
-                                current_user: User = Depends(auth_service.get_current_user)):
-    """
-    Gets images by user id. Available for admin and moderator.
 
-    :param user_id: The id of the user.
-    :type user_id: int
-    :param db: The async database session.
-    :type db: AsyncSession
-    :param current_user: The current user.
-    :type current_user: User
-    :return: The list of images.
-    :rtype: list[ImageResponse]
-    """
-    role_access = RoleAccess([Role.admin, Role.moderator])
-    await role_access(request=None, user=current_user)
-    images = await repository_images.get_images_by_user_id(db, user_id)
-    return images

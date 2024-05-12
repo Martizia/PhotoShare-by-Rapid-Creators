@@ -22,9 +22,9 @@ class Image(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     tags = relationship("Tag", secondary="image_tag", back_populates="images")
     created_at: Mapped[date] = mapped_column("created_at", DateTime, default=func.now(), nullable=True)
-    ratings = relationship("Rating", back_populates="image", cascade="all, delete")
-    comments = relationship("Comment", back_populates="imagecom", cascade="all, delete")
-    user = relationship("User", back_populates="imageuser")
+    ratings = relationship("Rating", cascade="all, delete")
+    comments = relationship("Comment", cascade="all, delete")
+    transformed = relationship("TransformedImage", cascade="all, delete")
 
 
 class Comment(Base):
@@ -39,8 +39,6 @@ class Comment(Base):
     updated_at: Mapped[date] = mapped_column(
         "updated_at", DateTime, default=func.now(), onupdate=func.now(), nullable=True
     )
-    imagecom = relationship("Image", back_populates="comments")
-    user = relationship("User", back_populates="commentuser")
 
 
 class Tag(Base):
@@ -72,8 +70,6 @@ class User(Base):
     confirmed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
     banned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
     reset_token: Mapped[str] = mapped_column(String, nullable=True)
-    imageuser = relationship("Image", back_populates="user", cascade="all, delete-orphan")
-    commentuser = relationship("Comment", back_populates="user", cascade="all, delete-orphan")
 
 
 class Rating(Base):
@@ -86,7 +82,6 @@ class Rating(Base):
     created_at: Mapped[date] = mapped_column(
         "created_at", DateTime, default=func.now(), nullable=False
     )
-    image = relationship("Image", back_populates="ratings")
 
 
 class TransformedImage(Base):

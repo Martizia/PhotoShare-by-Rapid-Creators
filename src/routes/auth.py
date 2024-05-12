@@ -5,11 +5,9 @@ from fastapi.security import (HTTPAuthorizationCredentials, HTTPBearer,
                               OAuth2PasswordRequestForm)
 from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from src.database.db import get_db
-from src.database.models import Role, User
+from src.database.models import User
 from src.repository import users as repository_users
-from src.services.roles import RoleAccess
 from fastapi.responses import JSONResponse
 from src.schemas.users import RequestEmail, TokenModel, UserModel, UserResponse, PasswordResetRequest, PasswordReset
 from src.services.auth import auth_service, add_blacklist_token
@@ -205,8 +203,6 @@ async def reset_password(body: PasswordReset, db: AsyncSession = Depends(get_db)
     """
     Resets password for user with given token
 
-    :param token: Token for password reset
-    :type token: str
     :param body: New password for user
     :type body: PasswordReset
     :param db: The async database session
@@ -225,105 +221,4 @@ async def reset_password(body: PasswordReset, db: AsyncSession = Depends(get_db)
     return {"message": "Password reset successfully"}
 
 
-@router.put("/users/{email}/role", status_code=status.HTTP_200_OK)
-async def change_user_role_by_email(
-        email: str,
-        new_role: Role,
-        current_user: User = Depends(auth_service.get_current_user),
-        session: AsyncSession = Depends(get_db),
-):
-    """
-    Changes user role by email
 
-    :param email: Email of the user to change role
-    :type email: str
-    :param new_role: New role for the user
-    :type new_role: Role
-    :param current_user: The current user
-    :type current_user: User
-    :param session: The async database session
-    :type session: AsyncSession
-    :return: The result of the role change
-    :rtype: JSONResponse
-    """
-    role_access = RoleAccess([Role.admin])
-    await role_access(request=None, user=current_user)
-    user = await session.execute(select(User).where(User.email == email))
-    user = user.scalar_one_or_none()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-    user.role = new_role
-    await session.commit()
-    return {"message": "User role updated successfully"}
-
-
-@router.put("/users/{email}/ban", status_code=status.HTTP_200_OK)
-async def ban_user_by_email(
-        email: str,
-        current_user: User = Depends(auth_service.get_current_user),
-        session: AsyncSession = Depends(get_db),
-):
-    """
-    Bans user by email
-
-    :param email: Email of the user to ban
-    :type email: str
-    :param current_user: The current user
-    :type current_user: User
-    :param session: The async database session
-    :type session: AsyncSession
-    :return: The result of the ban
-    :rtype: JSONResponse
-    """
-    role_access = RoleAccess([Role.admin, Role.moderator])
-    await role_access(request=None, user=current_user)
-    user = await session.execute(select(User).where(User.email == email))
-    user = user.scalar_one_or_none()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-    user.banned = True
-    await session.commit()
-    return {"message": "User banned successfully"}
-
-
-@router.put("/users/{email}/unban", status_code=status.HTTP_200_OK)
-async def unban_user_by_email(
-        email: str,
-        current_user: User = Depends(auth_service.get_current_user),
-        session: AsyncSession = Depends(get_db),
-):
-    """
-    Unbans user by email
-
-    :param email: Email of the user to unban
-    :type email: str
-    :param current_user: The current user
-    :type current_user: User
-    :param session: The async database session
-    :type session: AsyncSession
-    :return: The result of the unban
-    :rtype: JSONResponse
-    """
-    role_access = RoleAccess([Role.admin, Role.moderator])
-
-    await role_access(request=None, user=current_user)
-
-    user = await session.execute(select(User).where(User.email == email))
-    user = user.scalar_one_or_none()
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-
-    user.banned = False
-    await session.commit()
-
-    return {"message": "User unbanned successfully"}

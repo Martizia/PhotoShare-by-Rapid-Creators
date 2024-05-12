@@ -3,12 +3,12 @@ from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.db import get_db
-from src.database.models import User, Role
+from src.database.models import User
 from src.repository import comments as repository_comments
 from src.schemas.comments import CommentModel, CommentUpdateSchema
 from src.services.auth import auth_service
 from src.repository.rating import get_image
-from src.services.roles import RoleAccess
+
 
 router = APIRouter(prefix='/comments', tags=["Comments"])
 
@@ -49,7 +49,7 @@ async def create_comment(
     description="No more than 3 requests per minute",
     dependencies=[Depends(RateLimiter(times=3, seconds=60))],
 )
-async def update_comment(
+async def edit_comment(
     body: CommentUpdateSchema,
     comment_id: int = Path(ge=1),
     db: AsyncSession = Depends(get_db),
@@ -80,30 +80,4 @@ async def update_comment(
     return comment
 
 
-@router.delete(
-    "/{comment_id}",
-    description="No more than 1 request per 30 seconds",
-    dependencies=[Depends(RateLimiter(times=1, seconds=30))],
-)
-async def delete_comment(
-    comment_id: int = Path(ge=1),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(auth_service.get_current_user),
-):
-    """
-    Deletes a specific comment by its ID. Only admins and moderators can delete comments.
 
-    :param comment_id: The ID of the comment to delete. Must be greater than or equal to 1.
-    :type comment_id: int
-    :param db: The database session.
-    :type db: AsyncSession
-    :param current_user: The currently authenticated user.
-    :type current_user: User
-
-    :return: The deleted comment.
-    :rtype: Comment
-    """
-    role_access = RoleAccess([Role.admin, Role.moderator])
-    await role_access(request=None, user=current_user)
-    comment = await repository_comments.delete_comment(comment_id, db)
-    return comment

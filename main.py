@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from middlewares import CustomHeaderMiddleware
 from src.database.db import get_db
 from src.config.config import config
-from src.routes import comments, auth, users, images, rating
+from src.routes import comments, auth, users, images, rating, admin
 from src.services.auth import init_blacklist_file
 
 import uvicorn
@@ -31,6 +31,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router, prefix='/api')
+app.include_router(admin.router, prefix='/api')
 app.include_router(users.router, prefix='/api')
 app.include_router(images.router, prefix='/api')
 app.include_router(comments.router, prefix='/api')

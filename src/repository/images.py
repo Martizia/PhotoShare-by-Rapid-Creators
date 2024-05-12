@@ -38,7 +38,7 @@ async def create_image(db: AsyncSession, link: str, body: ImageSchema, user: Use
     return image
 
 
-async def delete_image_db(db: AsyncSession, image_id: int, user: User) -> Image:
+async def delete_image_user(db: AsyncSession, image_id: int, user: User) -> Image:
     """
     Deletes an image owned by current user.
 
@@ -57,13 +57,26 @@ async def delete_image_db(db: AsyncSession, image_id: int, user: User) -> Image:
     if image:
         await db.delete(image)
         await db.commit()
-    if user.role == Role.admin:
-        query = select(Image).filter_by(id=image_id)
-        result = await db.execute(query)
-        image = result.scalar_one_or_none()
-        if image:
-            await db.delete(image)
-            await db.commit()
+    return image
+
+
+async def delete_image_admin(db: AsyncSession, image_id: int):
+    """
+    Deletes an image by image id.
+
+    :param db: The async database session.
+    :type db: AsyncSession
+    :param image_id: The ID of the image to delete.
+    :type image_id: int
+    :return: The deleted image, or None if it does not exist.
+    :rtype: Image | None
+    """
+    query = select(Image).filter_by(id=image_id)
+    result = await db.execute(query)
+    image = result.scalar_one_or_none()
+    if image:
+        await db.delete(image)
+        await db.commit()
     return image
 
 

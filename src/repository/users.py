@@ -243,26 +243,6 @@ async def update_my_name(
     return user
 
 
-async def delete_user(user_id: int, db: AsyncSession):
-    """
-    Deletes a user.
-
-    :param user_id: The ID of the user
-    :type user_id: int
-    :param db: The async database session
-    :type db: AsyncSession
-    :return: The deleted user
-    :rtype: User | None
-    """
-    stmt = select(User).filter_by(id=user_id)
-    user = await db.execute(stmt)
-    user = user.scalar_one_or_none()
-    if user:
-        await db.delete(user)
-        await db.commit()
-    return user
-
-
 async def search_users(search_string: str, db: AsyncSession):
     """
     Searches for users by username or email.
